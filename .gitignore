@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+*.user
+settings.json
+crest-error.log

@@ -1,0 +1,12 @@
+<Application x:Class="Crest.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:Crest.Helpers"
+             ShutdownMode="OnExplicitShutdown">
+    <!-- No StartupUri: App.xaml.cs creates the notch, tray icon and services itself. -->
+    <Application.Resources>
+        <helpers:HexToBrushConverter x:Key="HexToBrush" />
+        <!-- Segoe Fluent Icons on Windows 11, falls back to Segoe MDL2 Assets on Windows 10. -->
+        <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    </Application.Resources>
+</Application>
