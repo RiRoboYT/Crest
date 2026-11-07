@@ -4,3 +4,4 @@ obj/
 *.user
 settings.json
 crest-error.log
+*.zip
