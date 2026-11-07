@@ -454,7 +454,7 @@ namespace Crest
                 ? (string.IsNullOrWhiteSpace(_media.Artist) ? FriendlyAppName(_media.SourceApp) : _media.Artist)
                 : "Play something to see it here";
 
-            PlayPauseButton.Content = _media.IsPlaying ? "" : "";   // Pause : Play
+            PlayPauseButton.Content = _media.IsPlaying ? "\uE769" : "\uE768";   // Pause : Play
             PlayPauseButton.IsEnabled = PreviousButton.IsEnabled = NextButton.IsEnabled = _media.HasSession;
 
             if (_media.Thumbnail != null)
