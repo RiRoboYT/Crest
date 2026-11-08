@@ -1,38 +1,47 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Crest.Helpers;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 
 namespace Crest.Services
 {
     /// <summary>
-    /// Thin wrapper around the Windows "Global System Media Transport Controls" API
-    /// (the same data the Windows volume flyout shows). Works with Spotify, browsers
-    /// (YouTube etc.), Windows Media Player, Groove, VLC (recent), and anything else
-    /// that integrates with SMTC.
+    /// Wrapper around the Windows "Global System Media Transport Controls" API (the same data the
+    /// Windows volume flyout shows). Works with Spotify, browsers (YouTube etc.), Windows Media
+    /// Player, and anything else that integrates with it.
     ///
-    /// WinRT events arrive on background threads; everything is marshalled to the
-    /// UI dispatcher so consumers can touch WPF objects directly in <see cref="Updated"/>.
+    /// Every media session is watched, so with <see cref="PreferPlayingSession"/> the notch follows
+    /// whichever app is actually playing instead of the one Windows happens to call "current".
+    ///
+    /// WinRT events arrive on background threads; everything is marshalled to the UI dispatcher so
+    /// consumers can touch WPF objects directly from <see cref="Updated"/> / <see cref="TrackChanged"/>.
     /// </summary>
     public sealed class MediaSessionService : IDisposable
     {
         private readonly Dispatcher _dispatcher;
         private GlobalSystemMediaTransportControlsSessionManager? _manager;
         private GlobalSystemMediaTransportControlsSession? _session;
+        private readonly List<GlobalSystemMediaTransportControlsSession> _watched = new();
 
         private int _mediaVersion;          // guards against out-of-order async property loads
         private TimeSpan _startTime;
         private TimeSpan _basePosition;
         private DateTimeOffset _baseTime = DateTimeOffset.Now;
         private DateTimeOffset _lastTimelineStamp;
+        private bool _preferPlaying = true;
         private bool _disposed;
 
         /// <summary>Raised on the UI thread whenever anything about the current media changes.</summary>
         public event EventHandler? Updated;
+
+        /// <summary>Raised on the UI thread when a different song (title/artist) starts showing.</summary>
+        public event EventHandler? TrackChanged;
 
         public bool HasSession => _session != null;
         public string Title { get; private set; } = "";
@@ -42,7 +51,10 @@ namespace Crest.Services
         public TimeSpan Duration { get; private set; }
         public double PlaybackRate { get; private set; } = 1.0;
         public ImageSource? Thumbnail { get; private set; }
+        /// <summary>Most prominent vivid color of the cover art, or null.</summary>
+        public Color? AlbumColor { get; private set; }
         public bool CanSeek { get; private set; }
+        /// <summary>App User Model ID of the app that owns the session (used to bring it to front).</summary>
         public string SourceApp { get; private set; } = "";
 
         public MediaSessionService(Dispatcher dispatcher)
@@ -50,14 +62,26 @@ namespace Crest.Services
             _dispatcher = dispatcher;
         }
 
+        /// <summary>When true, show whichever app is playing; otherwise follow Windows' "current" session.</summary>
+        public bool PreferPlayingSession
+        {
+            get => _preferPlaying;
+            set
+            {
+                if (_preferPlaying == value) return;
+                _preferPlaying = value;
+                Reevaluate();
+            }
+        }
+
         public async Task InitializeAsync()
         {
             try
             {
                 _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-                _manager.CurrentSessionChanged += (_, _) => _dispatcher.InvokeAsync(AttachCurrentSession);
-                _manager.SessionsChanged += (_, _) => _dispatcher.InvokeAsync(AttachCurrentSession);
-                AttachCurrentSession();
+                _manager.SessionsChanged += (_, _) => _dispatcher.InvokeAsync(RefreshSessions);
+                _manager.CurrentSessionChanged += (_, _) => _dispatcher.InvokeAsync(Reevaluate);
+                RefreshSessions();
             }
             catch (Exception ex)
             {
@@ -82,7 +106,7 @@ namespace Crest.Services
             }
         }
 
-        // ------------------------------------------------------------------ commands
+        // ================================================================== commands
 
         public Task TogglePlayPauseAsync() => Run(s => s.TryTogglePlayPauseAsync().AsTask());
         public Task NextAsync() => Run(s => s.TrySkipNextAsync().AsTask());
@@ -106,24 +130,95 @@ namespace Crest.Services
             catch (Exception ex) { App.LogError("Media command failed", ex); }
         }
 
-        // ------------------------------------------------------------------ session tracking
+        // ================================================================== session tracking
 
-        private void AttachCurrentSession()
+        /// <summary>Re-subscribes to every open session (called when apps open/close sessions).</summary>
+        private void RefreshSessions()
         {
             if (_disposed || _manager == null) return;
 
-            GlobalSystemMediaTransportControlsSession? next;
-            try { next = _manager.GetCurrentSession(); }
-            catch { next = null; }
+            foreach (var s in _watched)
+            {
+                try { s.PlaybackInfoChanged -= OnAnyPlaybackInfoChanged; } catch { /* session gone */ }
+            }
+            _watched.Clear();
 
-            if (ReferenceEquals(next, _session) && next != null)
+            try
+            {
+                foreach (var s in _manager.GetSessions())
+                {
+                    s.PlaybackInfoChanged += OnAnyPlaybackInfoChanged;
+                    _watched.Add(s);
+                }
+            }
+            catch (Exception ex)
+            {
+                App.LogError("Listing media sessions failed", ex);
+            }
+
+            Reevaluate();
+        }
+
+        private void OnAnyPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
+            => _dispatcher.InvokeAsync(Reevaluate);
+
+        /// <summary>Picks the session to display and refreshes playback state.</summary>
+        private void Reevaluate()
+        {
+            if (_disposed || _manager == null) return;
+
+            var next = ChooseSession();
+            if (next != null && ReferenceEquals(next, _session))
+            {
+                UpdatePlayback();
+                UpdateTimeline();
+                Updated?.Invoke(this, EventArgs.Empty);
                 return;
+            }
+            Attach(next);
+        }
 
+        private GlobalSystemMediaTransportControlsSession? ChooseSession()
+        {
+            GlobalSystemMediaTransportControlsSession? current = null;
+            try { current = _manager?.GetCurrentSession(); } catch { /* ignore */ }
+
+            if (!_preferPlaying) return current;
+
+            if (IsSessionPlaying(current)) return current;
+            if (_session != null && _watched.Contains(_session) && IsSessionPlaying(_session)) return _session;
+
+            foreach (var s in _watched)
+                if (IsSessionPlaying(s)) return s;
+
+            // Nothing is playing: keep showing what we had (if it still exists) instead of jumping around.
+            if (_session != null && _watched.Contains(_session)) return _session;
+            return current ?? (_watched.Count > 0 ? _watched[0] : null);
+        }
+
+        private static bool IsSessionPlaying(GlobalSystemMediaTransportControlsSession? s)
+        {
+            if (s == null) return false;
+            try
+            {
+                return s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void Attach(GlobalSystemMediaTransportControlsSession? next)
+        {
             if (_session != null)
             {
-                _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-                _session.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-                _session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                try
+                {
+                    _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+                    _session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                }
+                catch { /* session already gone */ }
             }
 
             _session = next;
@@ -136,7 +231,6 @@ namespace Crest.Services
             }
 
             _session.MediaPropertiesChanged += OnMediaPropertiesChanged;
-            _session.PlaybackInfoChanged += OnPlaybackInfoChanged;
             _session.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
 
             try { SourceApp = _session.SourceAppUserModelId ?? ""; } catch { SourceApp = ""; }
@@ -156,10 +250,12 @@ namespace Crest.Services
             IsPlaying = false;
             Duration = TimeSpan.Zero;
             Thumbnail = null;
+            AlbumColor = null;
             CanSeek = false;
             SourceApp = "";
             _basePosition = TimeSpan.Zero;
             _baseTime = DateTimeOffset.Now;
+            _mediaVersion++;   // drop any in-flight property load
         }
 
         private void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
@@ -167,15 +263,6 @@ namespace Crest.Services
             {
                 if (_session == null) return;
                 await UpdateMediaPropertiesAsync();
-            });
-
-        private void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
-            => _dispatcher.InvokeAsync(() =>
-            {
-                if (_session == null) return;
-                UpdatePlayback();
-                UpdateTimeline();
-                Updated?.Invoke(this, EventArgs.Empty);
             });
 
         private void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
@@ -253,17 +340,27 @@ namespace Crest.Services
                 if (version != _mediaVersion || !ReferenceEquals(s, _session) || props == null) return;
 
                 string newTitle = props.Title ?? "";
-                bool trackChanged = newTitle != Title || (props.Artist ?? "") != Artist;
+                string newArtist = string.IsNullOrWhiteSpace(props.Artist) ? (props.AlbumArtist ?? "") : props.Artist;
+                bool trackChanged = newTitle != Title || newArtist != Artist;
 
                 Title = newTitle;
-                Artist = string.IsNullOrWhiteSpace(props.Artist) ? (props.AlbumArtist ?? "") : props.Artist;
+                Artist = newArtist;
                 Album = props.AlbumTitle ?? "";
-                if (trackChanged) Thumbnail = null;
+                if (trackChanged)
+                {
+                    Thumbnail = null;
+                    AlbumColor = null;
+                }
                 Updated?.Invoke(this, EventArgs.Empty);
+
+                if (trackChanged && !string.IsNullOrWhiteSpace(newTitle))
+                    TrackChanged?.Invoke(this, EventArgs.Empty);
 
                 var thumb = await LoadThumbnailAsync(props.Thumbnail);
                 if (version != _mediaVersion || !ReferenceEquals(s, _session)) return;
+
                 Thumbnail = thumb;
+                AlbumColor = ColorHelper.ExtractAccent(thumb as BitmapSource);
                 Updated?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -304,11 +401,20 @@ namespace Crest.Services
         public void Dispose()
         {
             _disposed = true;
+            foreach (var s in _watched)
+            {
+                try { s.PlaybackInfoChanged -= OnAnyPlaybackInfoChanged; } catch { /* ignore */ }
+            }
+            _watched.Clear();
+
             if (_session != null)
             {
-                _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-                _session.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-                _session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                try
+                {
+                    _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+                    _session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                }
+                catch { /* ignore */ }
                 _session = null;
             }
             _manager = null;

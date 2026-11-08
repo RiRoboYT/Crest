@@ -14,6 +14,8 @@ namespace Crest
         private Mutex? _singleInstance;
         private SettingsManager? _settingsManager;
         private MediaSessionService? _media;
+        private VolumeService? _volume;
+        private AudioSpectrumService? _analyzer;
         private TrayIconService? _tray;
         private MainWindow? _notch;
         private SettingsWindow? _settingsWindow;
@@ -21,6 +23,9 @@ namespace Crest
         private static readonly object LogLock = new();
         private static readonly string LogPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Crest", "crest-error.log");
+
+        /// <summary>Location of the error log (shown in Settings → About).</summary>
+        public static string LogFilePath => LogPath;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -52,10 +57,13 @@ namespace Crest
             StartupManager.SetEnabled(settings.StartWithWindows);
             settings.PropertyChanged += OnSettingsPropertyChanged;
 
-            // ---- media + notch ----
-            _media = new MediaSessionService(Dispatcher);
+            // ---- media, audio + notch ----
+            _media = new MediaSessionService(Dispatcher) { PreferPlayingSession = settings.PreferPlayingSession };
+            _volume = new VolumeService(Dispatcher);
+            _volume.Initialize();
+            _analyzer = new AudioSpectrumService();
 
-            _notch = new MainWindow(settings, _media);
+            _notch = new MainWindow(settings, _media, _volume, _analyzer);
             _notch.SettingsRequested += (_, _) => ShowSettings();
             _notch.Show();
 
@@ -76,11 +84,11 @@ namespace Crest
 
         public void ShowSettings()
         {
-            if (_settingsManager == null) return;
+            if (_settingsManager == null || _media == null) return;
 
             if (_settingsWindow == null)
             {
-                _settingsWindow = new SettingsWindow(_settingsManager);
+                _settingsWindow = new SettingsWindow(_settingsManager, _media);
                 _settingsWindow.Closed += (_, _) =>
                 {
                     _settingsWindow = null;
@@ -105,6 +113,8 @@ namespace Crest
         {
             try { _settingsManager?.Flush(); } catch { /* ignore */ }
             _tray?.Dispose();
+            _analyzer?.Dispose();
+            _volume?.Dispose();
             _media?.Dispose();
 
             if (_singleInstance != null)
