@@ -152,6 +152,17 @@ namespace Crest
         //  Navigation
         // =====================================================================
 
+        /// <summary>Select a sidebar item on click even if WPF couldn't give it keyboard focus.</summary>
+        private void Nav_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            DependencyObject? d = e.OriginalSource as DependencyObject;
+            while (d != null && d is not ListBoxItem)
+                d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
+
+            if (d is ListBoxItem item && !item.IsSelected)
+                item.IsSelected = true;
+        }
+
         private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (Nav.SelectedItem is not ListBoxItem { Tag: string tag }) return;

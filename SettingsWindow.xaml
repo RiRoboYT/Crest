@@ -113,7 +113,8 @@
 
                     <!-- Navigation -->
                     <ListBox x:Name="Nav" Style="{StaticResource NavList}" ItemContainerStyle="{StaticResource NavItem}"
-                             Margin="14,0" SelectionChanged="Nav_SelectionChanged">
+                             Margin="14,0" SelectionChanged="Nav_SelectionChanged"
+                             PreviewMouseLeftButtonUp="Nav_PreviewMouseLeftButtonUp">
                         <ListBoxItem Tag="Appearance">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE790;" Width="28" />
