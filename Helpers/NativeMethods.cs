@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Crest.Helpers
 {
-    internal static class NativeMethods
+    public static class NativeMethods
     {
         // ------------------------------------------------------------------ window styles
         public const int GWL_EXSTYLE = -20;

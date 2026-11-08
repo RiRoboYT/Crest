@@ -115,7 +115,7 @@ namespace Crest.Services
             try
             {
                 d.AudioEndpointVolume.OnVolumeNotification -= OnVolumeNotification;
-                d.Dispose();
+                (d as IDisposable)?.Dispose();
             }
             catch
             {
@@ -152,7 +152,7 @@ namespace Crest.Services
             {
                 if (_enumerator != null && _client != null)
                     _enumerator.UnregisterEndpointNotificationCallback(_client);
-                _enumerator?.Dispose();
+                (_enumerator as IDisposable)?.Dispose();
             }
             catch
             {
