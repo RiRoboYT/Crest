@@ -30,6 +30,8 @@ namespace Crest
     {
         private const int PeekHeightDefault = 58;
         private static readonly TimeSpan StartupPeekGrace = TimeSpan.FromSeconds(4);
+        private static readonly TimeSpan IdleDelay = TimeSpan.FromMilliseconds(1500);
+        private static readonly TimeSpan PeekWaitForPlay = TimeSpan.FromSeconds(2);
 
         private readonly AppSettings _settings;
         private readonly MediaSessionService _media;
@@ -50,6 +52,13 @@ namespace Crest
         private readonly DispatcherTimer _collapseTimer;
         private readonly DispatcherTimer _peekTimer;
         private readonly DispatcherTimer _settingsApplyTimer;
+        private readonly DispatcherTimer _idleTimer;
+
+        // "Playing" as shown on screen. Lags the real state by a moment when music stops, so
+        // skipping tracks (which briefly reports "paused") doesn't make the notch flicker.
+        private bool _showPlaying;
+        private bool _peekPending;
+        private DateTime _peekRequestedAt;
 
         private IntPtr _hwnd;
         private IntPtr _winEventHook;
@@ -119,6 +128,13 @@ namespace Crest
                 if (_state == NotchState.Peek && !Notch.IsMouseOver) SetState(NotchState.Collapsed, animate: true);
             };
 
+            _idleTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = IdleDelay };
+            _idleTimer.Tick += (_, _) =>
+            {
+                _idleTimer.Stop();
+                if (!_media.IsPlaying) SetShowPlaying(false, animate: true);
+            };
+
             // Coalesce bursts of setting changes (e.g. slider drags) into one apply per frame-ish.
             _settingsApplyTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
             _settingsApplyTimer.Tick += (_, _) => { _settingsApplyTimer.Stop(); ApplySettings(); };
@@ -133,6 +149,7 @@ namespace Crest
             SourceInitialized += OnSourceInitialized;
             Loaded += (_, _) =>
             {
+                _showPlaying = _media.IsPlaying;
                 ApplySettings();
                 OnMediaUpdated(this, EventArgs.Empty);
                 UpdateVolumeUi();
@@ -275,7 +292,7 @@ namespace Crest
             LeftShoulder.Width = LeftShoulder.Height = RightShoulder.Width = RightShoulder.Height = Math.Max(shoulder, 0.1);
             ShapeRow.Margin = new Thickness(0, notchShape ? 0 : s.TopMargin, 0, 0);
 
-            CollapsedHost.Width = s.CollapsedWidth;
+            CollapsedHost.Width = CurrentCollapsedWidth;
             CollapsedHost.Height = s.CollapsedHeight;
             PeekHost.Width = PeekWidth;
             PeekHost.Height = PeekHeight;
@@ -287,7 +304,6 @@ namespace Crest
             ArtContainer.Visibility = s.ShowAlbumArt ? Visibility.Visible : Visibility.Collapsed;
             PeekArtContainer.Visibility = s.ShowAlbumArt ? Visibility.Visible : Visibility.Collapsed;
             ProgressRow.Visibility = s.ShowProgress ? Visibility.Visible : Visibility.Collapsed;
-            ExpandedSpectrum.Visibility = s.ShowSpectrumWhenExpanded ? Visibility.Visible : Visibility.Collapsed;
             TitleText.IsScrollingEnabled = s.ScrollLongTitles;
             PeekTitle.IsScrollingEnabled = s.ScrollLongTitles;
             UpdateVolumeUi();
@@ -307,6 +323,7 @@ namespace Crest
             }
 
             UpdateWindowBounds();
+            UpdatePlayingPresentation(animate: false);
             SetState(_state, animate: false);
             ApplyCornerRadius();   // shape style may have changed even if the radius didn't
             OnClockTick();
@@ -369,6 +386,77 @@ namespace Crest
             => Math.Max(s.CornerRadius, Math.Min(s.ExpandedCornerRadius, ComputePeekHeight(s) / 2.4));
 
         // =====================================================================
+        //  Playing vs idle (Dynamic Island style)
+        // =====================================================================
+
+        /// <summary>Collapsed width right now: just the time when idle (if enabled), full width while playing.</summary>
+        private double CurrentCollapsedWidth
+            => _settings.ShrinkWhenIdle && !_showPlaying
+                ? ComputeIdleWidth(_settings, VisualTreeHelper.GetDpi(this).PixelsPerDip)
+                : _settings.CollapsedWidth;
+
+        /// <summary>Width of the bars area in the collapsed notch (incl. its left gap).</summary>
+        private double BarsWidth
+        {
+            get
+            {
+                var s = _settings;
+                return 10 + s.SpectrumBarCount * s.SpectrumBarWidth + (s.SpectrumBarCount - 1) * s.SpectrumBarSpacing;
+            }
+        }
+
+        public static string TimeFormat(AppSettings s)
+            => s.Use24HourClock
+                ? (s.ShowSeconds ? "HH:mm:ss" : "HH:mm")
+                : (s.ShowSeconds ? "hh:mm:ss tt" : "hh:mm tt");
+
+        /// <summary>Idle notch width: the widest possible time text plus padding (never wider than the normal width).</summary>
+        public static double ComputeIdleWidth(AppSettings s, double pixelsPerDip)
+        {
+            string sample = new DateTime(2000, 1, 1, 12, 58, 58).ToString(TimeFormat(s), CultureInfo.InvariantCulture);
+
+            FontFamily family;
+            try { family = new FontFamily(s.FontFamily); }
+            catch { family = new FontFamily("Segoe UI"); }
+
+            var text = new FormattedText(sample, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                new Typeface(family, FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal),
+                s.FontSize, Brushes.White, pixelsPerDip > 0 ? pixelsPerDip : 1.0);
+
+            double width = Math.Ceiling(text.WidthIncludingTrailingWhitespace) + 40;
+            double min = Math.Min(s.CollapsedWidth, s.CollapsedHeight * 2.2);
+            return Math.Clamp(width, min, s.CollapsedWidth);
+        }
+
+        private void SetShowPlaying(bool playing, bool animate)
+        {
+            if (_showPlaying == playing) return;
+            _showPlaying = playing;
+            UpdatePlayingPresentation(animate);
+        }
+
+        /// <summary>Shows / hides the bars everywhere and resizes the collapsed notch.</summary>
+        private void UpdatePlayingPresentation(bool animate)
+        {
+            int ms = animate ? _settings.AnimationDurationMs : 0;
+            IEasingFunction ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+
+            // Collapsed: bars slide open / closed and fade.
+            Animate(CollapsedBarsHost, WidthProperty, _showPlaying ? BarsWidth : 0, ms, ease);
+            Fade(CollapsedBarsHost, _showPlaying ? 1 : 0, ms * (_showPlaying ? 0.8 : 0.5), _showPlaying ? ms * 0.2 : 0);
+
+            // Collapsed width follows (only animate the shape itself while it's actually collapsed).
+            double collapsedWidth = CurrentCollapsedWidth;
+            Animate(CollapsedHost, WidthProperty, collapsedWidth, ms, ease);
+            if (_state == NotchState.Collapsed)
+                Animate(Notch, WidthProperty, collapsedWidth, ms, new BackEase { Amplitude = 0.2, EasingMode = EasingMode.EaseOut });
+
+            // Peek / expanded: bars only while playing.
+            PeekSpectrum.Visibility = _showPlaying ? Visibility.Visible : Visibility.Collapsed;
+            ExpandedSpectrum.Visibility = _showPlaying && _settings.ShowSpectrumWhenExpanded ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        // =====================================================================
         //  State: collapsed / peek / expanded
         // =====================================================================
 
@@ -388,7 +476,7 @@ namespace Crest
                     w = PeekWidth; h = PeekHeight; r = ComputePeekRadius(s);
                     break;
                 default:
-                    w = s.CollapsedWidth; h = s.CollapsedHeight; r = s.CornerRadius;
+                    w = CurrentCollapsedWidth; h = s.CollapsedHeight; r = s.CornerRadius;
                     break;
             }
 
@@ -610,10 +698,7 @@ namespace Crest
         {
             DateTime now = DateTime.Now;
 
-            string format = _settings.Use24HourClock
-                ? (_settings.ShowSeconds ? "HH:mm:ss" : "HH:mm")
-                : (_settings.ShowSeconds ? "hh:mm:ss tt" : "hh:mm tt");
-            string time = now.ToString(format, CultureInfo.InvariantCulture);
+            string time = now.ToString(TimeFormat(_settings), CultureInfo.InvariantCulture);
 
             if (CollapsedTime.Text != time) CollapsedTime.Text = time;
             if (ExpandedTime.Text != time) ExpandedTime.Text = time;
@@ -659,6 +744,18 @@ namespace Crest
 
             ApplyDynamicColors(animate: true);
             _spectrum.SetPlaying(_media.IsPlaying);
+
+            if (_media.IsPlaying)
+            {
+                _idleTimer.Stop();
+                SetShowPlaying(true, animate: true);
+                TryShowPendingPeek();
+            }
+            else if (_showPlaying && !_idleTimer.IsEnabled)
+            {
+                _idleTimer.Start();   // go idle only if it stays stopped for a moment
+            }
+
             UpdateProgress();
         }
 
@@ -666,6 +763,25 @@ namespace Crest
         {
             if (!_settings.PeekOnTrackChange || !_notchVisible) return;
             if (DateTime.UtcNow - _startedAt < StartupPeekGrace) return;   // not on app start
+
+            // Only peek for songs that actually start playing. The playing status often arrives a
+            // moment after the new title, so wait briefly for it instead of deciding right away.
+            _peekPending = true;
+            _peekRequestedAt = DateTime.UtcNow;
+            TryShowPendingPeek();
+        }
+
+        private void TryShowPendingPeek()
+        {
+            if (!_peekPending) return;
+            if (DateTime.UtcNow - _peekRequestedAt > PeekWaitForPlay)
+            {
+                _peekPending = false;   // track changed while paused → no peek
+                return;
+            }
+            if (!_media.IsPlaying) return;
+
+            _peekPending = false;
             if (_state == NotchState.Expanded || _previewPinned || Notch.IsMouseOver) return;
 
             SetState(NotchState.Peek, animate: true);
@@ -798,6 +914,7 @@ namespace Crest
             _hoverTimer.Stop();
             _collapseTimer.Stop();
             _peekTimer.Stop();
+            _idleTimer.Stop();
             _settingsApplyTimer.Stop();
             _spectrum.SetSuspended(true);
 

@@ -202,18 +202,29 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
+                            <!-- Centered in the free space: alone when idle, left of the bars while playing. -->
                             <TextBlock x:Name="CollapsedTime"
                                        Style="{StaticResource NotchText}"
+                                       HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontWeight="SemiBold"
                                        Text="12:00 PM" />
 
-                            <StackPanel x:Name="CollapsedSpectrum"
-                                        Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        VerticalAlignment="Center"
-                                        Margin="10,0,0,0"
-                                        IsHitTestVisible="False" />
+                            <!-- Bars slide/fade in only while something is playing (Dynamic Island style). -->
+                            <Border x:Name="CollapsedBarsHost"
+                                    Grid.Column="1"
+                                    Width="0" Opacity="0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    ClipToBounds="True"
+                                    IsHitTestVisible="False">
+                                <StackPanel x:Name="CollapsedSpectrum"
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Margin="10,0,0,0"
+                                            IsHitTestVisible="False" />
+                            </Border>
                         </Grid>
                     </Grid>
 

@@ -71,6 +71,7 @@ namespace Crest.Models
         private bool _clickToOpenApp = true;
         private bool _scrollLongTitles = true;
         private bool _useAlbumColors = false;
+        private bool _shrinkWhenIdle = true;
 
         // ---------- Behavior ----------
         private bool _startWithWindows = false;
@@ -133,6 +134,8 @@ namespace Crest.Models
         public bool ClickToOpenApp { get => _clickToOpenApp; set => Set(ref _clickToOpenApp, value); }
         public bool ScrollLongTitles { get => _scrollLongTitles; set => Set(ref _scrollLongTitles, value); }
         public bool UseAlbumColors { get => _useAlbumColors; set => Set(ref _useAlbumColors, value); }
+        /// <summary>Dynamic-Island style: when nothing plays, the notch shrinks to just the time.</summary>
+        public bool ShrinkWhenIdle { get => _shrinkWhenIdle; set => Set(ref _shrinkWhenIdle, value); }
 
         // ================================================================ Behavior
         public bool StartWithWindows { get => _startWithWindows; set => Set(ref _startWithWindows, value); }

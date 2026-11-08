@@ -188,8 +188,12 @@
                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Border Style="{StaticResource SegmentHost}">
                                             <StackPanel Orientation="Horizontal">
+                                                <RadioButton x:Name="PvStateIdle" GroupName="PreviewState" Style="{StaticResource Segment}"
+                                                             Content="Idle" Checked="PreviewState_Checked"
+                                                             ToolTip="Nothing playing" />
                                                 <RadioButton x:Name="PvStateCollapsed" GroupName="PreviewState" Style="{StaticResource Segment}"
-                                                             Content="Collapsed" IsChecked="True" Checked="PreviewState_Checked" />
+                                                             Content="Playing" IsChecked="True" Checked="PreviewState_Checked"
+                                                             ToolTip="Collapsed, music playing" />
                                                 <RadioButton x:Name="PvStatePeek" GroupName="PreviewState" Style="{StaticResource Segment}"
                                                              Content="Peek" Checked="PreviewState_Checked" />
                                                 <RadioButton x:Name="PvStateExpanded" GroupName="PreviewState" Style="{StaticResource Segment}"
@@ -249,7 +253,7 @@
                                                                         <ColumnDefinition Width="Auto" />
                                                                     </Grid.ColumnDefinitions>
                                                                     <TextBlock x:Name="PvTime" Style="{StaticResource PvText}" FontWeight="SemiBold"
-                                                                               VerticalAlignment="Center" Text="09:41 PM" />
+                                                                               HorizontalAlignment="Center" VerticalAlignment="Center" Text="09:41 PM" />
                                                                     <StackPanel x:Name="PvCollapsedBars" Grid.Column="1" Orientation="Horizontal"
                                                                                 VerticalAlignment="Center" Margin="10,0,0,0" />
                                                                 </Grid>
@@ -720,6 +724,15 @@
                                         </DockPanel>
                                         <Border Style="{StaticResource Divider}" />
                                         <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShrinkWhenIdle}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Shrink when nothing is playing" />
+                                                <TextBlock Style="{StaticResource RowDesc}"
+                                                           Text="Like the Dynamic Island: just the time when idle, and it widens with the bars when music starts. The bars only show while music plays either way." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
                                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding UseAlbumColors}" />
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Style="{StaticResource RowTitle}" Text="Colors from album art" />
@@ -752,7 +765,7 @@
                                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PeekOnTrackChange}" />
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Style="{StaticResource RowTitle}" Text="Peek when a new song starts" />
-                                                <TextBlock Style="{StaticResource RowDesc}" Text="The notch briefly opens to show the cover and title." />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="The notch briefly opens to show the cover and title – only when the new song is actually playing." />
                                             </StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Divider}" />

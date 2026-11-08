@@ -37,6 +37,7 @@ namespace Crest
         private readonly DispatcherTimer _previewClock;
         private readonly DispatcherTimer _previewRefresh;
         private NotchState _previewState = NotchState.Collapsed;
+        private bool _previewIdle;   // "Idle" segment: collapsed with nothing playing
 
         private bool _syncingControls;
 
@@ -223,6 +224,7 @@ namespace Crest
         private void PreviewState_Checked(object sender, RoutedEventArgs e)
         {
             if (_syncingControls || !IsLoaded) return;
+            _previewIdle = sender == PvStateIdle;
             if (sender == PvStatePeek) _previewState = NotchState.Peek;
             else if (sender == PvStateExpanded) _previewState = NotchState.Expanded;
             else _previewState = NotchState.Collapsed;
@@ -232,9 +234,11 @@ namespace Crest
         private void SetPreviewState(NotchState state)
         {
             _previewState = state;
+            _previewIdle = false;
             _syncingControls = true;
             try
             {
+                PvStateIdle.IsChecked = false;
                 PvStateCollapsed.IsChecked = state == NotchState.Collapsed;
                 PvStatePeek.IsChecked = state == NotchState.Peek;
                 PvStateExpanded.IsChecked = state == NotchState.Expanded;
@@ -287,7 +291,11 @@ namespace Crest
             PvLeftShoulder.Width = PvLeftShoulder.Height = PvRightShoulder.Width = PvRightShoulder.Height = Math.Max(shoulder, 0.1);
             PvShapeRow.Margin = new Thickness(0, notchShape ? 0 : s.TopMargin, 0, 0);
 
-            PvCollapsed.Width = s.CollapsedWidth;
+            double collapsedWidth = _previewIdle && s.ShrinkWhenIdle
+                ? MainWindow.ComputeIdleWidth(s, VisualTreeHelper.GetDpi(this).PixelsPerDip)
+                : s.CollapsedWidth;
+            PvCollapsed.Width = collapsedWidth;
+            PvCollapsedBars.Visibility = _previewIdle ? Visibility.Collapsed : Visibility.Visible;
             PvCollapsed.Height = s.CollapsedHeight;
             PvPeek.Width = MainWindow.ComputePeekWidth(s);
             PvPeek.Height = MainWindow.ComputePeekHeight(s);
@@ -302,7 +310,7 @@ namespace Crest
                 case NotchState.Peek:
                     w = MainWindow.ComputePeekWidth(s); h = MainWindow.ComputePeekHeight(s); r = MainWindow.ComputePeekRadius(s); break;
                 default:
-                    w = s.CollapsedWidth; h = s.CollapsedHeight; r = s.CornerRadius; break;
+                    w = collapsedWidth; h = s.CollapsedHeight; r = s.CornerRadius; break;
             }
 
             AnimateTo(PvNotch, WidthProperty, w, animate);
@@ -331,10 +339,7 @@ namespace Crest
         private void UpdatePreviewTexts()
         {
             var now = DateTime.Now;
-            string format = _settings.Use24HourClock
-                ? (_settings.ShowSeconds ? "HH:mm:ss" : "HH:mm")
-                : (_settings.ShowSeconds ? "hh:mm:ss tt" : "hh:mm tt");
-            string time = now.ToString(format, CultureInfo.InvariantCulture);
+            string time = now.ToString(MainWindow.TimeFormat(_settings), CultureInfo.InvariantCulture);
             PvTime.Text = time;
             PvExpandedTime.Text = time;
             PvDate.Text = now.ToString("dddd, MMM d", CultureInfo.CurrentCulture);
