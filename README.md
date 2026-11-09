@@ -10,6 +10,29 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 * **Tray icon:** left-click opens Settings. Right-click gives Settings, Show notch, Start with Windows and Exit.
 * **Topmost:** the notch stays on top, including over fullscreen video and borderless-fullscreen games.
 
+## What's new in 1.3
+
+| Area | Change | Where in Settings |
+|---|---|---|
+| Closed notch | Tiny album cover on the left while music plays. | Media → Now playing |
+| Pop-ups | Caps Lock / Num Lock, low battery (20 % / 10 %) and fully charged. | Activities → Pop-ups |
+| Microphone | **Win + Alt + M** mutes the mic in every app; a red mic shows in the notch while muted. | Activities → Microphone |
+| Smooth transitions | Play/pause icons morph, the clock rolls, new covers and lyric lines fade in. | Appearance → Effects |
+| Player | Shuffle and repeat buttons, plus a speaker button for the Sound page. | Media → Expanded player |
+| Sound page | Switch speakers / headphones and set the volume of each app. | Widgets → Pages |
+| Spectrum styles | Mirrored, Bars, bouncing Dots or Wave. | Spectrum → Mode |
+| Lyrics | "Lyrics by LRCLIB" credit and − / + 0.5 s timing buttons, remembered per song. | Media → Lyrics |
+| Controls page | Dark mode, Bluetooth, Wi-Fi, keep awake, pause pop-ups, mute mic, focus, night light. | Widgets → Pages |
+| Focus timer | Work / break cycles on the Timer page and in the side bubble; quiet while focusing. | Widgets → Timer & focus |
+| Screenshots | New screenshots land on the shelf automatically. | Widgets → Shelf & internet |
+| Clipboard | Copied images show up too (newest 3, memory only). | Widgets → Clipboard |
+| Internet speed | On the System page, and optionally in the closed notch. | Widgets → Shelf & internet |
+| Backup | Export / import all settings to a file. | About → Files |
+| Welcome tour | Three quick cards on first launch; can be replayed. | About → Tips |
+| Presets | New: Neon, Sunset, Ocean, Minimal; and "a different cover color each song". | Appearance / Media |
+| Hide while typing | The notch shrinks to a line while you type. Off by default. | Behavior → General |
+| Colors | Colored page icons in the notch and colored icons in the settings sidebar. | – |
+
 ## What's new in 1.2
 
 | Area | Change |
@@ -64,6 +87,8 @@ Crest/
 ├── MainWindow.Pages.cs                  ← expanded pages (lyrics, calendar, weather, system, timer, shelf, notes)
 ├── MainWindow.Activities.cs             ← pop-ups, volume/brightness indicator, timer bubble, privacy dots
 ├── MainWindow.Glow.cs                   ← ambient album glow: colors, breathing, beat pulse, click-through
+├── MainWindow.Extras.cs                 ← 1.3: cover in the closed notch, Sound & Controls pages, mic / lock keys / battery pop-ups, smooth transitions, hide while typing
+├── TourWindow.cs                        ← first-run welcome tour
 ├── MainWindow.Input.cs                  ← gestures, hotkey, drag & drop, typing
 ├── SettingsWindow.xaml / .cs            ← settings UI with live preview
 ├── Themes/SettingsStyles.xaml           ← dark/light control styles for the settings window
@@ -86,6 +111,10 @@ Crest/
 │   ├── PowerService.cs, BluetoothService.cs, BrightnessService.cs, PrivacyService.cs
 │   ├── ForegroundWatcher.cs             ← stay-on-top, fullscreen detection, per-app rules
 │   ├── HotkeyService.cs, ClipboardService.cs, MessageWindow.cs
+│   ├── MicService.cs                    ← microphone mute (Win + Alt + M)
+│   ├── AudioDevicesService.cs           ← output device switching + per-app volume
+│   ├── KeyboardHookService.cs           ← Caps / Num Lock + "hide while typing" (key down/up only)
+│   ├── NetworkSpeedService.cs, QuickTogglesService.cs
 │   ├── CrestServices.cs                 ← creates all shared services
 │   ├── SettingsManager.cs               ← JSON load/save (debounced)
 │   ├── StartupManager.cs                ← "Start with Windows" (HKCU Run key)
@@ -139,4 +168,8 @@ Settings are saved to `settings.json` next to `Crest.exe`. If that folder isn't 
 * **Volume indicator:** Windows' own volume pop-up can't be hidden from outside, so it may still appear when you use the volume keys. Scrolling on the notch changes the volume directly and only shows Crest's indicator.
 * **System page:** shows CPU, memory, GPU usage and disk. Temperatures need vendor tools and admin rights, so they aren't included.
 * **Album glow:** while the glow is showing, the overlay turns click-through whenever the cursor is away from the notch, so the light never blocks clicks on the app below. "Pulse with the music" shares the loopback listener with the real spectrum; when no sound can be read (for example an app using exclusive audio mode) it falls back to a calm built-in beat.
+* **Sound output switching:** Windows has no public API for changing the default speakers, so Crest uses the same internal interface as Windows' own sound settings (also used by tools like SoundSwitch). Some apps keep playing on the old device until they're restarted.
+* **Controls page:** Bluetooth and Wi-Fi switches may ask Windows for permission the first time. Night light has no public switch, so its tile opens the Night light page in Settings. "Pause pop-ups" is Crest's own do-not-disturb – Windows' Focus / Do Not Disturb can't be switched by other apps.
+* **Caps Lock and "hide while typing":** these use a low-level keyboard hook that only notices that a key went down. Nothing you type is read, stored or sent. The hook only runs while one of those two options is on.
+* **Shuffle / repeat:** only works when the playing app allows it from outside (Spotify does; many web players don't – the buttons are greyed out then).
 * **Memory:** WPF's baseline working set is usually about 40–60 MB.

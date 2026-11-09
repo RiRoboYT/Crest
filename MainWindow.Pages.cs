@@ -52,6 +52,8 @@ namespace Crest
             _pages.Add(new PageInfo("Timer", TabTimer, PageTimer, () => _settings.PageTimer));
             _pages.Add(new PageInfo("Shelf", TabShelf, PageShelf, () => _settings.PageShelf));
             _pages.Add(new PageInfo("Notes", TabNotes, PageNotes, () => _settings.PageNotes));
+            _pages.Add(new PageInfo("Sound", TabSound, PageSound, () => _settings.PageSound));
+            _pages.Add(new PageInfo("Controls", TabControls, PageControls, () => _settings.PageControls));
 
             _lyricsTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(200) };
             _lyricsTimer.Tick += (_, _) => UpdateLyricLine(force: false);
@@ -130,7 +132,12 @@ namespace Crest
             {
                 bool enabled = p.Enabled();
                 p.Tab.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
-                p.Tab.Opacity = p.Name == _currentPage ? 1.0 : 0.45;
+                bool selected = p.Name == _currentPage;
+                p.Tab.Opacity = selected ? 1.0 : 0.6;
+                // The selected tab gets a soft tint of its own color.
+                p.Tab.Background = selected && p.Tab.Foreground is SolidColorBrush fg
+                    ? new SolidColorBrush(Color.FromArgb(0x38, fg.Color.R, fg.Color.G, fg.Color.B))
+                    : Brushes.Transparent;
                 if (enabled) visible++;
             }
             // Only the Music page → no tab strip at all.
@@ -176,6 +183,7 @@ namespace Crest
             RenderCurrentPage();
             UpdateLyricsTimer();
             UpdateProgress();
+            UpdateSoundRefresh();
         }
 
         private void OnExpandedOpened()
@@ -198,8 +206,8 @@ namespace Crest
         {
             if (inUse == _statsInUse) return;
             _statsInUse = inUse;
-            if (inUse) _svc.Stats.AddUser();
-            else _svc.Stats.RemoveUser();
+            if (inUse) { _svc.Stats.AddUser(); _svc.Network.AddUser(); }
+            else { _svc.Stats.RemoveUser(); _svc.Network.RemoveUser(); }
         }
 
         private void RenderCurrentPage()
@@ -213,6 +221,11 @@ namespace Crest
                 case "Timer": RenderTimer(); break;
                 case "Shelf": RenderShelf(); break;
                 case "Notes": RenderClipboard(); break;
+                case "Sound": RenderSound(); break;
+                case "Controls":
+                    RenderControls();
+                    _ = _svc.Toggles.RefreshRadiosAsync();
+                    break;
             }
         }
 
@@ -268,6 +281,7 @@ namespace Crest
             _lyricsKey = key;
             _lyrics = null;
             _lyricIndex = -2;
+            LoadLyricsOffset();
 
             if (string.IsNullOrWhiteSpace(Media.Title))
             {
@@ -332,6 +346,7 @@ namespace Crest
             SyncedLyricsPanel.Visibility = Visibility.Collapsed;
             PlainLyricsScroller.Visibility = Visibility.Collapsed;
             LyricsStatus.Visibility = Visibility.Visible;
+            UpdateLyricsFooter();
 
             if (!_settings.LyricsEnabled) { LyricsStatus.Text = "Lyrics are turned off in Settings → Media."; return; }
             if (string.IsNullOrWhiteSpace(Media.Title)) { LyricsStatus.Text = "Play a song to see its lyrics."; return; }
@@ -358,7 +373,7 @@ namespace Crest
             if (_lyrics?.Synced != true) return;
 
             // A small lead so the line appears as it's being sung, not after.
-            int idx = _lyrics.IndexAt(Media.Position + TimeSpan.FromMilliseconds(250));
+            int idx = _lyrics.IndexAt(Media.Position + TimeSpan.FromMilliseconds(250 + _lyricsOffsetMs));
             if (idx == _lyricIndex && !force) return;
             bool changed = idx != _lyricIndex;
             _lyricIndex = idx;
@@ -375,8 +390,18 @@ namespace Crest
             if (changed && _settings.AnimationDurationMs > 0)
             {
                 var d = new Duration(TimeSpan.FromMilliseconds(220));
-                LyricShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(8, 0, d) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+                LyricShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(8, 0, d) { EasingFunction = ease });
                 LyricCurrent.BeginAnimation(OpacityProperty, new DoubleAnimation(0.2, 1, d));
+                if (Smooth)
+                {
+                    // The whole block glides up together: previous line fades out, next fades in.
+                    var slow = new Duration(TimeSpan.FromMilliseconds(320));
+                    LyricPrevShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(10, 0, slow) { EasingFunction = ease });
+                    LyricPrev.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0.75, slow));
+                    LyricNextShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(10, 0, slow) { EasingFunction = ease });
+                    LyricNext.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, slow));
+                }
             }
         }
 
@@ -509,7 +534,8 @@ namespace Crest
             string battery = _svc.Power.HasBattery
                 ? $"Battery {_svc.Power.Percent}%{(_svc.Power.OnAc ? " · charging" : "")}  ·  "
                 : "";
-            SystemFooter.Text = battery + uptime;
+            string net = $"↓ {NetworkSpeedService.Format(_svc.Network.Down)}  ↑ {NetworkSpeedService.Format(_svc.Network.Up)}  ·  ";
+            SystemFooter.Text = net + battery + uptime;
         }
 
         // =====================================================================
@@ -520,12 +546,22 @@ namespace Crest
         {
             var t = _svc.Timer;
             TimerBig.Text = TimerService.Format(t.Value);
-            TimerToggleBtn.Content = t.Running ? "\uE769" : "\uE768";
+            SwapGlyph(TimerToggleBtn, t.Running ? "\uE769" : "\uE768");
             bool timerMode = t.Mode == TimerMode.Timer;
+            bool focus = t.Mode == TimerMode.Focus;
             ModeTimerBtn.Opacity = timerMode ? 1 : 0.45;
-            ModeStopwatchBtn.Opacity = timerMode ? 0.45 : 1;
+            ModeStopwatchBtn.Opacity = t.Mode == TimerMode.Stopwatch ? 1 : 0.45;
+            ModeFocusBtn.Opacity = focus ? 1 : 0.45;
             TimerPresets.Visibility = timerMode ? Visibility.Visible : Visibility.Collapsed;
-            TimerPlusBtn.Visibility = timerMode ? Visibility.Visible : Visibility.Collapsed;
+            TimerPlusBtn.Visibility = timerMode || focus ? Visibility.Visible : Visibility.Collapsed;
+            TimerSub.Visibility = focus ? Visibility.Visible : Visibility.Collapsed;
+            if (focus)
+            {
+                TimerSub.Text = t.IsBreak
+                    ? $"Break · then round {t.Round + 1}"
+                    : $"Focus · round {t.Round} · {(int)t.FocusBreak.TotalMinutes} min break next";
+                TimerSub.Foreground = new SolidColorBrush(t.IsBreak ? Green : Tomato);
+            }
         }
 
         private void TimerMode_Click(object sender, RoutedEventArgs e)
@@ -729,30 +765,49 @@ namespace Crest
             var items = _svc.Clipboard.Items;
             if (items.Count == 0)
             {
-                ClipboardList.Children.Add(MakeText("Copy some text and it shows up here.", subtle: true));
+                ClipboardList.Children.Add(MakeText(_settings.ClipboardImages ? "Copy text or an image and it shows up here." : "Copy some text and it shows up here.", subtle: true));
                 ((TextBlock)ClipboardList.Children[0]).TextWrapping = TextWrapping.Wrap;
                 return;
             }
 
-            foreach (var text in items.Take(4))
+            foreach (var item in items.Take(4))
             {
-                string oneLine = text.Replace("\r", " ").Replace("\n", " ");
-                var label = MakeText(oneLine);
-                label.FontSize = Math.Max(8, _settings.FontSize - 2);
+                FrameworkElement content;
+                TextBlock? label = null;
+                if (item.IsImage)
+                {
+                    content = new Border
+                    {
+                        CornerRadius = new CornerRadius(5),
+                        Height = 30,
+                        Width = 52,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        Background = new ImageBrush(item.Thumbnail) { Stretch = Stretch.UniformToFill }
+                    };
+                }
+                else
+                {
+                    string oneLine = (item.Text ?? "").Replace("\r", " ").Replace("\n", " ");
+                    label = MakeText(oneLine);
+                    label.FontSize = Math.Max(8, _settings.FontSize - 2);
+                    content = label;
+                }
+
                 var button = new Button
                 {
                     Style = (Style)FindResource("TextButton"),
-                    Content = label,
+                    Content = content,
                     Margin = new Thickness(2, 1, 0, 3),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Left,
-                    ToolTip = "Copy again"
+                    ToolTip = item.IsImage ? "Copy this image again" : "Copy again"
                 };
-                string value = text;
+                var value = item;
                 button.Click += (_, _) =>
                 {
                     _svc.Clipboard.Copy(value);
-                    label.Text = "Copied ✓";
+                    if (label != null) label.Text = "Copied ✓";
+                    else button.Opacity = 0.5;
                     _copiedTimer?.Stop();
                     _copiedTimer?.Start();
                 };

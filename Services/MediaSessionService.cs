@@ -56,6 +56,12 @@ namespace Crest.Services
         /// <summary>The cover's main vivid colors (1–3, most prominent first), or empty.</summary>
         public IReadOnlyList<Color> AlbumPalette { get; private set; } = Array.Empty<Color>();
         public bool CanSeek { get; private set; }
+        /// <summary>The app supports shuffle / repeat from outside (many do, some don't).</summary>
+        public bool CanShuffle { get; private set; }
+        public bool CanRepeat { get; private set; }
+        public bool ShuffleOn { get; private set; }
+        /// <summary>0 = off, 1 = repeat this song, 2 = repeat the list.</summary>
+        public int RepeatMode { get; private set; }
         /// <summary>App User Model ID of the app that owns the session (used to bring it to front).</summary>
         public string SourceApp { get; private set; } = "";
 
@@ -113,6 +119,26 @@ namespace Crest.Services
         public Task TogglePlayPauseAsync() => Run(s => s.TryTogglePlayPauseAsync().AsTask());
         public Task NextAsync() => Run(s => s.TrySkipNextAsync().AsTask());
         public Task PreviousAsync() => Run(s => s.TrySkipPreviousAsync().AsTask());
+
+        public Task ToggleShuffleAsync()
+        {
+            if (!CanShuffle) return Task.CompletedTask;
+            bool next = !ShuffleOn;
+            return Run(s => s.TryChangeShuffleActiveAsync(next).AsTask());
+        }
+
+        /// <summary>Off → repeat list → repeat song → off (like most players).</summary>
+        public Task CycleRepeatAsync()
+        {
+            if (!CanRepeat) return Task.CompletedTask;
+            var next = RepeatMode switch
+            {
+                0 => global::Windows.Media.MediaPlaybackAutoRepeatMode.List,
+                2 => global::Windows.Media.MediaPlaybackAutoRepeatMode.Track,
+                _ => global::Windows.Media.MediaPlaybackAutoRepeatMode.None
+            };
+            return Run(s => s.TryChangeAutoRepeatModeAsync(next).AsTask());
+        }
 
         public Task SeekAsync(TimeSpan position)
         {
@@ -255,6 +281,8 @@ namespace Crest.Services
             AlbumColor = null;
             AlbumPalette = Array.Empty<Color>();
             CanSeek = false;
+            CanShuffle = CanRepeat = ShuffleOn = false;
+            RepeatMode = 0;
             SourceApp = "";
             _basePosition = TimeSpan.Zero;
             _baseTime = DateTimeOffset.Now;
@@ -295,6 +323,15 @@ namespace Crest.Services
                 IsPlaying = playing;
                 PlaybackRate = info.PlaybackRate is double r && r > 0 ? r : 1.0;
                 CanSeek = info.Controls?.IsPlaybackPositionEnabled ?? false;
+                CanShuffle = info.Controls?.IsShuffleEnabled ?? false;
+                CanRepeat = info.Controls?.IsRepeatEnabled ?? false;
+                ShuffleOn = info.IsShuffleActive ?? false;
+                RepeatMode = info.AutoRepeatMode switch
+                {
+                    global::Windows.Media.MediaPlaybackAutoRepeatMode.Track => 1,
+                    global::Windows.Media.MediaPlaybackAutoRepeatMode.List => 2,
+                    _ => 0
+                };
             }
             catch (Exception ex)
             {

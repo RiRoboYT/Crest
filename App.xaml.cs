@@ -20,6 +20,7 @@ namespace Crest
         private CrestServices? _services;
         private TrayIconService? _tray;
         private SettingsWindow? _settingsWindow;
+        private TourWindow? _tour;
         private readonly List<MainWindow> _notches = new();
         private bool _notchesVisible = true;
         private string _monitorLayout = "";
@@ -72,8 +73,14 @@ namespace Crest
             {
                 if (settings.TimerSound) System.Media.SystemSounds.Exclamation.Play();
             };
+            _services.Hotkey.MicPressed += (_, _) => _services.Mic.ToggleMute();
+            _services.Timer.FocusPhaseChanged += (_, _) =>
+            {
+                if (settings.TimerSound) System.Media.SystemSounds.Asterisk.Play();
+            };
             _services.Hotkey.SetEnabled(settings.HotkeyEnabled);
             _services.Start();
+            ApplySharedSettings(settings);
 
             // ---- notch window(s) ----
             RebuildNotches();
@@ -88,6 +95,54 @@ namespace Crest
                 _notches.ForEach(n => n.SetNotchVisible(visible));
             };
             _tray.ExitRequested += (_, _) => ExitApplication();
+
+            // ---- first run: a short tour ----
+            if (!settings.TourShown)
+            {
+                var delay = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
+                delay.Tick += (_, _) => { delay.Stop(); ShowTour(); };
+                delay.Start();
+            }
+        }
+
+        /// <summary>Settings that drive the shared services (not a particular notch window).</summary>
+        private void ApplySharedSettings(AppSettings s)
+        {
+            if (_services == null) return;
+            _services.Hotkey.SetMicEnabled(s.MicMuteHotkey);
+            _services.LockKeys.SetEnabled(s.LockKeysActivity);
+            _services.Shelf.WatchScreenshots(s.ScreenshotsToShelf);
+            _services.Clipboard.SetImagesEnabled(s.ClipboardImages);
+            _services.Timer.ConfigureFocus(s.FocusWorkMinutes, s.FocusBreakMinutes);
+        }
+
+        /// <summary>Shows the three-step welcome tour under the notch (first run, or Settings → About).</summary>
+        public void ShowTour()
+        {
+            if (_settingsManager == null) return;
+            if (_tour != null) { _tour.Activate(); return; }
+            var s = _settingsManager.Settings;
+
+            // Under the notch on the monitor it lives on.
+            var monitor = MonitorHelper.Find(s.MonitorDevice == "*" ? "" : s.MonitorDevice);
+            double centerX, top;
+            if (monitor != null)
+            {
+                double scale = monitor.Scale > 0 ? monitor.Scale : 1.0;
+                centerX = (monitor.Bounds.Left + monitor.Bounds.Right) / 2.0 / scale + s.HorizontalOffset;
+                top = monitor.Bounds.Top / scale + s.TopMargin + s.CollapsedHeight + 6;
+            }
+            else
+            {
+                centerX = SystemParameters.PrimaryScreenWidth / 2 + s.HorizontalOffset;
+                top = s.TopMargin + s.CollapsedHeight + 6;
+            }
+
+            _tour = new TourWindow(centerX, top);
+            _tour.Finished += (_, _) => s.TourShown = true;
+            _tour.Closed += (_, _) => _tour = null;
+            _tour.Show();
+            _tour.Activate();
         }
 
         private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -100,6 +155,14 @@ namespace Crest
                     break;
                 case nameof(AppSettings.HotkeyEnabled):
                     _services?.Hotkey.SetEnabled(s.HotkeyEnabled);
+                    break;
+                case nameof(AppSettings.MicMuteHotkey):
+                case nameof(AppSettings.LockKeysActivity):
+                case nameof(AppSettings.ScreenshotsToShelf):
+                case nameof(AppSettings.ClipboardImages):
+                case nameof(AppSettings.FocusWorkMinutes):
+                case nameof(AppSettings.FocusBreakMinutes):
+                    ApplySharedSettings(s);
                     break;
                 case nameof(AppSettings.MonitorDevice):
                     // Switching to / from "every monitor" changes how many windows exist.
@@ -171,6 +234,7 @@ namespace Crest
 
         public void ExitApplication()
         {
+            _tour?.Close();
             _settingsWindow?.Close();
             foreach (var n in _notches.ToList()) n.Close();
             _notches.Clear();

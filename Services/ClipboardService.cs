@@ -1,29 +1,47 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Crest.Helpers;
 
 namespace Crest.Services
 {
+    /// <summary>One remembered copy: text or an image.</summary>
+    public sealed class ClipItem
+    {
+        public string? Text { get; init; }
+        public BitmapSource? Image { get; init; }
+        /// <summary>Small preview for the list.</summary>
+        public BitmapSource? Thumbnail { get; init; }
+        public bool IsImage => Image != null;
+    }
+
     /// <summary>
-    /// Optional clipboard history for the Notes page: the last few copied texts.
+    /// Optional clipboard history for the Notes page: the last few copied texts (and images).
     /// Kept in memory only – never written to disk – and only while enabled.
     /// </summary>
     public sealed class ClipboardService : IDisposable
     {
         private const int MaxItems = 8;
+        private const int MaxImages = 3;
         private const int MaxLength = 400;
+        private const int MaxImageSide = 4096;
 
         private readonly MessageWindow _window = new("CrestClipboard");
         private readonly Dispatcher _dispatcher;
-        private readonly List<string> _items = new();
+        private readonly List<ClipItem> _items = new();
         private bool _listening;
         private string? _ownCopy;
+        private bool _ownImageCopy;
 
         public event EventHandler? Changed;
 
-        public IReadOnlyList<string> Items => _items;
+        public IReadOnlyList<ClipItem> Items => _items;
+
+        /// <summary>Also remember copied images (screenshots, pictures from the web…).</summary>
+        public bool ImagesEnabled { get; set; } = true;
 
         public ClipboardService(Dispatcher dispatcher)
         {
@@ -53,13 +71,28 @@ namespace Crest.Services
             }
         }
 
+        public void SetImagesEnabled(bool enabled)
+        {
+            if (ImagesEnabled == enabled) return;
+            ImagesEnabled = enabled;
+            if (!enabled && _items.RemoveAll(i => i.IsImage) > 0) Changed?.Invoke(this, EventArgs.Empty);
+        }
+
         /// <summary>Puts an item back on the clipboard.</summary>
-        public void Copy(string text)
+        public void Copy(ClipItem item)
         {
             try
             {
-                _ownCopy = text;
-                Clipboard.SetText(text);
+                if (item.Image != null)
+                {
+                    _ownImageCopy = true;
+                    Clipboard.SetImage(item.Image);
+                }
+                else if (item.Text != null)
+                {
+                    _ownCopy = item.Text;
+                    Clipboard.SetText(item.Text);
+                }
             }
             catch (Exception ex)
             {
@@ -70,27 +103,71 @@ namespace Crest.Services
         private void ReadClipboard()
         {
             if (!_listening) return;
-            string? text = null;
-            for (int attempt = 0; attempt < 3 && text == null; attempt++)
+
+            for (int attempt = 0; attempt < 3; attempt++)
             {
                 try
                 {
-                    if (!Clipboard.ContainsText()) return;
-                    text = Clipboard.GetText();
+                    if (Clipboard.ContainsText())
+                    {
+                        ReadText(Clipboard.GetText());
+                        return;
+                    }
+                    if (ImagesEnabled && Clipboard.ContainsImage())
+                    {
+                        ReadImage(Clipboard.GetImage());
+                        return;
+                    }
+                    return;
                 }
                 catch
                 {
                     System.Threading.Thread.Sleep(30);   // clipboard busy – try again
                 }
             }
+        }
+
+        private void ReadText(string? text)
+        {
             if (string.IsNullOrWhiteSpace(text)) return;
             if (text == _ownCopy) { _ownCopy = null; return; }
 
             text = text.Trim();
             if (text.Length > MaxLength) text = text[..MaxLength] + "…";
 
-            _items.Remove(text);
-            _items.Insert(0, text);
+            _items.RemoveAll(i => i.Text == text);
+            Insert(new ClipItem { Text = text });
+        }
+
+        private void ReadImage(BitmapSource? source)
+        {
+            if (source == null) return;
+            if (_ownImageCopy) { _ownImageCopy = false; return; }
+            if (source.PixelWidth <= 0 || source.PixelHeight <= 0 ||
+                source.PixelWidth > MaxImageSide || source.PixelHeight > MaxImageSide) return;
+
+            // Own copies of the pixels: the clipboard's bitmap goes away with the next copy.
+            var full = new WriteableBitmap(source);
+            full.Freeze();
+
+            double scale = Math.Min(1.0, 96.0 / Math.Max(source.PixelWidth, source.PixelHeight));
+            BitmapSource thumb = new TransformedBitmap(full, new ScaleTransform(scale, scale));
+            thumb.Freeze();
+
+            Insert(new ClipItem { Image = full, Thumbnail = thumb });
+
+            // Images are big: keep only the newest few.
+            int images = 0;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (!_items[i].IsImage) continue;
+                if (++images > MaxImages) _items.RemoveAt(i--);
+            }
+        }
+
+        private void Insert(ClipItem item)
+        {
+            _items.Insert(0, item);
             if (_items.Count > MaxItems) _items.RemoveRange(MaxItems, _items.Count - MaxItems);
             Changed?.Invoke(this, EventArgs.Empty);
         }

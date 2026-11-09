@@ -18,8 +18,74 @@ namespace Crest.Services
         private readonly List<string> _files = new();
 
         public event EventHandler? Changed;
+        /// <summary>A new screenshot was put on the shelf (UI thread).</summary>
+        public event Action<string>? ScreenshotAdded;
 
         public IReadOnlyList<string> Files => _files;
+
+        private FileSystemWatcher? _screenshots;
+
+        /// <summary>Puts every new screenshot (Win + PrtScn, Snipping Tool…) on the shelf.</summary>
+        public void WatchScreenshots(bool enabled)
+        {
+            if (enabled == (_screenshots != null)) return;
+            if (!enabled)
+            {
+                _screenshots!.Dispose();
+                _screenshots = null;
+                return;
+            }
+
+            string folder = ScreenshotsFolder();
+            try
+            {
+                Directory.CreateDirectory(folder);
+                _screenshots = new FileSystemWatcher(folder)
+                {
+                    IncludeSubdirectories = false,
+                    NotifyFilter = NotifyFilters.FileName
+                };
+                _screenshots.Created += OnScreenshotCreated;
+                _screenshots.Renamed += (s, e) => OnScreenshotCreated(s, e);
+                _screenshots.EnableRaisingEvents = true;
+            }
+            catch (Exception ex)
+            {
+                App.LogError("Watching the Screenshots folder failed", ex);
+                _screenshots?.Dispose();
+                _screenshots = null;
+            }
+        }
+
+        private void OnScreenshotCreated(object sender, FileSystemEventArgs e)
+        {
+            string ext = Path.GetExtension(e.FullPath).ToLowerInvariant();
+            if (ext is not (".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp")) return;
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null) return;
+            // Give the app a moment to finish writing the file.
+            _ = System.Threading.Tasks.Task.Delay(700).ContinueWith(_ => dispatcher.InvokeAsync(() =>
+            {
+                if (!File.Exists(e.FullPath) || _files.Contains(e.FullPath, StringComparer.OrdinalIgnoreCase)) return;
+                Add(new[] { e.FullPath });
+                ScreenshotAdded?.Invoke(e.FullPath);
+            }));
+        }
+
+        public static string ScreenshotsFolder()
+        {
+            try
+            {
+                if (Helpers.NativeMethods.SHGetKnownFolderPath(Helpers.NativeMethods.FOLDERID_Screenshots, 0, IntPtr.Zero, out var path) == 0
+                    && !string.IsNullOrWhiteSpace(path))
+                    return path;
+            }
+            catch
+            {
+                // older Windows – use the usual place
+            }
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Screenshots");
+        }
 
         public ShelfService()
         {

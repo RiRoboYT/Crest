@@ -47,6 +47,51 @@ namespace Crest.Services
 
         private readonly Dictionary<string, LyricsResult?> _cache = new();
 
+        // ---------------------------------------------------------------- per-song sync offset
+        private static readonly string OffsetsPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Crest", "lyrics-offsets.json");
+        private Dictionary<string, int>? _offsets;
+
+        /// <summary>Milliseconds the lyrics are moved ahead for this song (positive = lines show earlier).</summary>
+        public int GetOffset(string key)
+        {
+            LoadOffsets();
+            return _offsets!.TryGetValue(key, out int ms) ? ms : 0;
+        }
+
+        public void SetOffset(string key, int ms)
+        {
+            LoadOffsets();
+            ms = Math.Clamp(ms, -10000, 10000);
+            if (ms == 0) _offsets!.Remove(key);
+            else _offsets![key] = ms;
+            try
+            {
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(OffsetsPath)!);
+                System.IO.File.WriteAllText(OffsetsPath, JsonSerializer.Serialize(_offsets));
+            }
+            catch (Exception ex)
+            {
+                App.LogError("Saving lyrics offset failed", ex);
+            }
+        }
+
+        private void LoadOffsets()
+        {
+            if (_offsets != null) return;
+            try
+            {
+                _offsets = System.IO.File.Exists(OffsetsPath)
+                    ? JsonSerializer.Deserialize<Dictionary<string, int>>(System.IO.File.ReadAllText(OffsetsPath))
+                    : null;
+            }
+            catch
+            {
+                _offsets = null;
+            }
+            _offsets ??= new Dictionary<string, int>();
+        }
+
         public async Task<LyricsResult?> GetAsync(string title, string artist, string album, TimeSpan duration, CancellationToken ct)
         {
             (title, artist) = Clean(title, artist);

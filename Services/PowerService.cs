@@ -12,6 +12,11 @@ namespace Crest.Services
         private bool _lastOnAc;
 
         public event EventHandler? ChargerChanged;
+        /// <summary>"low" (20 % / 10 %) or "full", with the battery percentage.</summary>
+        public event Action<string, int>? BatteryAlert;
+
+        private readonly DispatcherTimer _poll;
+        private bool _warned20, _warned10, _toldFull;
 
         public bool HasBattery { get; private set; }
         public bool OnAc { get; private set; }
@@ -22,7 +27,44 @@ namespace Crest.Services
             _dispatcher = dispatcher;
             Read();
             _lastOnAc = OnAc;
+            // Don't alert about the state the PC was already in when Crest started.
+            _warned20 = Percent >= 0 && Percent <= 20;
+            _warned10 = Percent >= 0 && Percent <= 10;
+            _toldFull = Percent >= 100;
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
+
+            // Windows doesn't announce every percent, so look once a minute.
+            _poll = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(1) };
+            _poll.Tick += (_, _) => { Read(); CheckLevels(); };
+            if (HasBattery) _poll.Start();
+        }
+
+        private void CheckLevels()
+        {
+            if (!HasBattery || Percent < 0) return;
+
+            if (OnAc)
+            {
+                _warned20 = _warned10 = false;
+                if (Percent >= 100 && !_toldFull)
+                {
+                    _toldFull = true;
+                    BatteryAlert?.Invoke("full", Percent);
+                }
+                return;
+            }
+
+            if (Percent < 95) _toldFull = false;
+            if (Percent <= 10 && !_warned10)
+            {
+                _warned10 = _warned20 = true;
+                BatteryAlert?.Invoke("low", Percent);
+            }
+            else if (Percent <= 20 && !_warned20)
+            {
+                _warned20 = true;
+                BatteryAlert?.Invoke("low", Percent);
+            }
         }
 
         public void Read()
@@ -47,12 +89,17 @@ namespace Crest.Services
             _dispatcher.InvokeAsync(() =>
             {
                 Read();
+                CheckLevels();
                 if (!HasBattery || OnAc == _lastOnAc) return;
                 _lastOnAc = OnAc;
                 ChargerChanged?.Invoke(this, EventArgs.Empty);
             });
         }
 
-        public void Dispose() => SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        public void Dispose()
+        {
+            _poll.Stop();
+            SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        }
     }
 }

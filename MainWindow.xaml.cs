@@ -166,6 +166,7 @@ namespace Crest
             InitPages();
             InitGlow();
             InitActivities();
+            InitExtras();
             InitInput();
 
             SourceInitialized += OnSourceInitialized;
@@ -335,6 +336,7 @@ namespace Crest
         {
             bool visible = IsEffectivelyVisible;
             _spectrum.SetSuspended(!visible);
+            UpdateNetUsage(resize: true);
             UpdateGlow(animate: visible);
             if (visible)
             {
@@ -430,6 +432,7 @@ namespace Crest
 
             ApplyPagesSettings();
             ApplyActivitySettings();
+            ApplyExtrasSettings();
             ApplyRules();
 
             UpdateWindowBounds();
@@ -450,6 +453,14 @@ namespace Crest
 
             if (Media.AlbumColor is Color album)
             {
+                // "A different cover color each song": pick one of the cover's colors per track.
+                var palette = Media.AlbumPalette;
+                if (s.AlbumColorShuffle && palette.Count > 1)
+                {
+                    int hash = 17;
+                    foreach (char ch in Media.Title + "|" + Media.Artist) hash = unchecked(hash * 31 + ch);
+                    album = palette[(hash & 0x7FFFFFFF) % palette.Count];
+                }
                 Color adjusted = ColorHelper.AdjustForBackground(album, background);
                 if (s.UseAlbumColors)
                 {
@@ -514,6 +525,7 @@ namespace Crest
                     : s.CollapsedWidth;
                 if (ShowingCollapsedLyric) width = Math.Max(width, Math.Min(Math.Max(s.CollapsedWidth, 300), s.ExpandedWidth));
                 if (PrivacyDots.Visibility == Visibility.Visible) width += PrivacyDotsWidth;
+                width += ExtrasCollapsedWidth;
                 return width;
             }
         }
@@ -566,6 +578,8 @@ namespace Crest
             IEasingFunction ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
             UpdateCollapsedContent();
+            UpdateCollapsedArt(animate, resize: false);
+            UpdateNetUsage(resize: false);
 
             // Collapsed: bars slide open / closed and fade.
             Animate(CollapsedBarsHost, WidthProperty, _showPlaying ? BarsWidth : 0, ms, ease);
@@ -604,6 +618,7 @@ namespace Crest
         private void SetState(NotchState target, bool animate)
         {
             if (animate && target == _state) return;
+            if (target != NotchState.Collapsed) RestoreFromTyping(animate);
             var previous = _state;
             _state = target;
 
@@ -650,6 +665,7 @@ namespace Crest
 
             UpdateBubble(animate);
             UpdateGlow(animate);
+            UpdateSoundRefresh();
         }
 
         private void ShowHost(FrameworkElement host, bool show, NotchState owner, int ms)
@@ -732,7 +748,7 @@ namespace Crest
 
         /// <summary>True when a pop-up may interrupt right now.</summary>
         private bool CanPopUp
-            => IsEffectivelyVisible && !_quiet && _state != NotchState.Expanded && !KeepOpen && !Notch.IsMouseOver;
+            => IsEffectivelyVisible && !_quiet && !PopupsSilenced && _state != NotchState.Expanded && !KeepOpen && !Notch.IsMouseOver;
 
         // =====================================================================
         //  Clock
@@ -743,7 +759,12 @@ namespace Crest
             DateTime now = DateTime.Now;
             string time = now.ToString(TimeFormat(_settings), CultureInfo.InvariantCulture);
 
-            if (CollapsedTime.Text != time) CollapsedTime.Text = time;
+            if (CollapsedTime.Text != time)
+            {
+                bool first = CollapsedTime.Text.Length == 0 || CollapsedTime.Text == "12:00 PM";
+                CollapsedTime.Text = time;
+                if (!first) RollTime();
+            }
             if (ExpandedTime.Text != time) ExpandedTime.Text = time;
 
             string date = now.ToString("ddd, MMM d", CultureInfo.CurrentCulture);
@@ -773,7 +794,6 @@ namespace Crest
             PeekTitle.Text = title;
             PeekArtist.Text = artist;
 
-            PlayPauseButton.Content = Media.IsPlaying ? "\uE769" : "\uE768";   // Pause : Play
             PlayPauseButton.IsEnabled = PreviousButton.IsEnabled = NextButton.IsEnabled = Media.HasSession;
 
             bool hasArt = Media.Thumbnail != null;
@@ -800,6 +820,7 @@ namespace Crest
             }
 
             OnMediaUpdatedForLyrics(hasMedia);
+            OnMediaUpdatedExtras();
             UpdateProgress();
         }
 
@@ -976,6 +997,7 @@ namespace Crest
 
             ClosePages();
             CloseActivities();
+            CloseExtras();
 
             foreach (var unsubscribe in _unsubscribe)
             {

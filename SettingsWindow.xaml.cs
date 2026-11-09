@@ -88,7 +88,7 @@ namespace Crest
             DataContext = _settings;
 
             SettingsPathText.Text = manager.SettingsPath;
-            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.1.0");
+            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.3.0");
 
             // Theme
             ApplyTheme();
@@ -344,6 +344,7 @@ namespace Crest
             PvExpandedBars.Visibility = s.ShowSpectrumWhenExpanded ? Visibility.Visible : Visibility.Collapsed;
 
             _previewSpectrum.Configure(s.SpectrumBarCount, s.SpectrumBarWidth, s.SpectrumBarSpacing, s.SpectrumMaxHeight, s.SpectrumSpeedMs);
+            _previewSpectrum.SetStyle(s.SpectrumStyle);
 
             UpdatePreviewTexts();
             UpdatePreviewMedia();
@@ -663,9 +664,53 @@ namespace Crest
 
             if (result == MessageBoxResult.Yes)
             {
+                bool tourShown = _settings.TourShown;
                 _settings.CopyFrom(new AppSettings());
+                _settings.TourShown = tourShown;   // a reset shouldn't replay the welcome tour
                 SyncSegments();
                 SyncMonitorSelection();
+            }
+        }
+
+        private void ShowTour_Click(object sender, RoutedEventArgs e) => (Application.Current as App)?.ShowTour();
+
+        private void ExportSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "Export Crest settings",
+                FileName = "crest-settings.json",
+                Filter = "Crest settings (*.json)|*.json",
+                AddExtension = true
+            };
+            if (dialog.ShowDialog(this) != true) return;
+            try
+            {
+                _manager.Export(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Couldn't save the file:\n" + ex.Message, "Crest", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void ImportSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Import Crest settings",
+                Filter = "Crest settings (*.json)|*.json|All files (*.*)|*.*"
+            };
+            if (dialog.ShowDialog(this) != true) return;
+            try
+            {
+                _manager.Import(dialog.FileName);
+                SyncSegments();
+                SyncMonitorSelection();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "That file couldn't be loaded:\n" + ex.Message, "Crest", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

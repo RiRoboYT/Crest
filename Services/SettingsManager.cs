@@ -62,6 +62,23 @@ namespace Crest.Services
             }
         }
 
+        /// <summary>Writes the current settings to a file of the user's choice.</summary>
+        public void Export(string path)
+        {
+            File.WriteAllText(path, JsonSerializer.Serialize(Settings, JsonOptions));
+        }
+
+        /// <summary>Loads settings from an exported file into the live settings. Throws on a bad file.</summary>
+        public void Import(string path)
+        {
+            var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), JsonOptions)
+                         ?? throw new InvalidDataException("The file doesn't contain Crest settings.");
+            bool tourShown = Settings.TourShown;
+            Settings.CopyFrom(loaded);
+            Settings.TourShown = tourShown;   // importing someone's look shouldn't replay the tour
+            Save();
+        }
+
         /// <summary>Flushes any pending debounced save.</summary>
         public void Flush()
         {

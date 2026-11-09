@@ -205,7 +205,10 @@ namespace Crest
 
             string text = TimerService.Format(t.Value);
             BubbleText.Text = text;
-            BubbleIcon.Foreground = new SolidColorBrush(t.Running ? Orange : Gray);
+            BubbleIcon.Foreground = new SolidColorBrush(!t.Running ? Gray
+                : t.Mode == TimerMode.Focus ? (t.IsBreak ? Green : Tomato)
+                : Orange);
+            Bubble.ToolTip = t.Mode == TimerMode.Focus ? (t.IsBreak ? "Break – open the timer" : $"Focus round {t.Round} – open the timer") : "Open the timer";
             double width = Math.Min(BubbleMaxWidth, 34 + text.Length * (_settings.FontSize * 0.62));
 
             if (show)

@@ -23,6 +23,12 @@ namespace Crest.Services
         public TimerService Timer { get; }
         public ShelfService Shelf { get; }
         public NotesService Notes { get; }
+        public KeyboardHookService KeyboardHook { get; }
+        public LockKeysService LockKeys { get; }
+        public MicService Mic { get; }
+        public AudioDevicesService AudioDevices { get; }
+        public NetworkSpeedService Network { get; }
+        public QuickTogglesService Toggles { get; }
 
         public CrestServices(Dispatcher dispatcher)
         {
@@ -43,6 +49,12 @@ namespace Crest.Services
             Timer = new TimerService();
             Shelf = new ShelfService();
             Notes = new NotesService();
+            KeyboardHook = new KeyboardHookService(dispatcher);
+            LockKeys = new LockKeysService(KeyboardHook);
+            Mic = new MicService(dispatcher);
+            AudioDevices = new AudioDevicesService();
+            Network = new NetworkSpeedService();
+            Toggles = new QuickTogglesService();
         }
 
         /// <summary>Starts everything that runs on its own.</summary>
@@ -52,6 +64,8 @@ namespace Crest.Services
             Foreground.Start();
             Bluetooth.Start();
             Brightness.Start();
+            Mic.Initialize();
+            _ = Toggles.RefreshRadiosAsync();
             _ = Media.InitializeAsync();
         }
 
@@ -74,6 +88,13 @@ namespace Crest.Services
             Safe(Brightness.Dispose);
             Safe(Privacy.Dispose);
             Safe(Stats.Dispose);
+            Safe(() => Shelf.WatchScreenshots(false));
+            Safe(LockKeys.Dispose);
+            Safe(KeyboardHook.Dispose);
+            Safe(Mic.Dispose);
+            Safe(AudioDevices.Dispose);
+            Safe(Network.Dispose);
+            Safe(Toggles.Dispose);
         }
     }
 }

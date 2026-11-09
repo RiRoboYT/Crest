@@ -6,7 +6,9 @@ namespace Crest.Services
     public enum TimerMode
     {
         Timer,
-        Stopwatch
+        Stopwatch,
+        /// <summary>Focus sessions: work, short break, work… (Pomodoro).</summary>
+        Focus
     }
 
     /// <summary>A countdown timer and a stopwatch shared by every notch window.</summary>
@@ -18,6 +20,17 @@ namespace Crest.Services
 
         public event EventHandler? Changed;
         public event EventHandler? Finished;
+        /// <summary>Focus mode switched between work and break (UI thread).</summary>
+        public event EventHandler? FocusPhaseChanged;
+
+        public TimeSpan FocusWork { get; private set; } = TimeSpan.FromMinutes(25);
+        public TimeSpan FocusBreak { get; private set; } = TimeSpan.FromMinutes(5);
+        /// <summary>Focus mode: true during a break.</summary>
+        public bool IsBreak { get; private set; }
+        /// <summary>Focus mode: the current work round (1, 2, 3…).</summary>
+        public int Round { get; private set; } = 1;
+        /// <summary>A focus work block is running right now.</summary>
+        public bool InFocusWork => Mode == TimerMode.Focus && Running && !IsBreak;
 
         public TimerMode Mode { get; private set; } = TimerMode.Timer;
         public bool Running { get; private set; }
@@ -50,8 +63,39 @@ namespace Crest.Services
             if (mode == Mode) return;
             Reset();
             Mode = mode;
-            _accumulated = mode == TimerMode.Timer ? Duration : TimeSpan.Zero;
+            if (mode == TimerMode.Focus)
+            {
+                IsBreak = false;
+                Round = 1;
+                Duration = FocusWork;
+            }
+            else if (mode == TimerMode.Timer && Duration == FocusWork)
+            {
+                Duration = TimeSpan.FromMinutes(5);
+            }
+            _accumulated = mode == TimerMode.Stopwatch ? TimeSpan.Zero : Duration;
             Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>Lengths of focus blocks and breaks (from the settings).</summary>
+        public void ConfigureFocus(int workMinutes, int breakMinutes)
+        {
+            FocusWork = TimeSpan.FromMinutes(Math.Clamp(workMinutes, 1, 180));
+            FocusBreak = TimeSpan.FromMinutes(Math.Clamp(breakMinutes, 1, 60));
+            if (Mode == TimerMode.Focus && !Running && _accumulated == Duration)
+            {
+                Duration = IsBreak ? FocusBreak : FocusWork;
+                _accumulated = Duration;
+                Changed?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>Starts a fresh focus session right away.</summary>
+        public void StartFocus()
+        {
+            SetMode(TimerMode.Focus);
+            Reset();
+            Start();
         }
 
         /// <summary>Starts a countdown of <paramref name="duration"/> right away.</summary>
@@ -65,7 +109,7 @@ namespace Crest.Services
 
         public void AddMinute()
         {
-            if (Mode != TimerMode.Timer) return;
+            if (Mode == TimerMode.Stopwatch) return;
             if (Running)
             {
                 _accumulated = Value + TimeSpan.FromMinutes(1);
@@ -88,7 +132,7 @@ namespace Crest.Services
         public void Start()
         {
             if (Running) return;
-            if (Mode == TimerMode.Timer && _accumulated <= TimeSpan.Zero) _accumulated = Duration;
+            if (Mode != TimerMode.Stopwatch && _accumulated <= TimeSpan.Zero) _accumulated = Duration;
             _startedAt = DateTime.Now;
             Running = true;
             _tick.Start();
@@ -108,12 +152,30 @@ namespace Crest.Services
         {
             Running = false;
             _tick.Stop();
-            _accumulated = Mode == TimerMode.Timer ? Duration : TimeSpan.Zero;
+            if (Mode == TimerMode.Focus)
+            {
+                IsBreak = false;
+                Round = 1;
+                Duration = FocusWork;
+            }
+            _accumulated = Mode == TimerMode.Stopwatch ? TimeSpan.Zero : Duration;
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnTick()
         {
+            if (Mode == TimerMode.Focus && Value <= TimeSpan.Zero)
+            {
+                // Work → break → work… and keep running.
+                IsBreak = !IsBreak;
+                if (!IsBreak) Round++;
+                Duration = IsBreak ? FocusBreak : FocusWork;
+                _accumulated = Duration;
+                _startedAt = DateTime.Now;
+                Changed?.Invoke(this, EventArgs.Empty);
+                FocusPhaseChanged?.Invoke(this, EventArgs.Empty);
+                return;
+            }
             if (Mode == TimerMode.Timer && Value <= TimeSpan.Zero)
             {
                 Running = false;

@@ -25,7 +25,7 @@
           CollapsedHost – privacy dots + time (or lyric line) + spectrum
           PeekHost      – small art + title (a new song started)
           ActivityHost  – charging, headphones, calendar, timer done, volume / brightness
-          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes
+          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes, Sound, Controls
         Next to the notch: Bubble – a running timer / stopwatch (split island).
     -->
     <Window.Resources>
@@ -80,15 +80,56 @@
             </Setter>
         </Style>
 
+        <Style x:Key="SmallMediaButton" TargetType="Button" BasedOn="{StaticResource MediaButton}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <!-- ============ quick-toggle tile (Controls page) ============ -->
+        <Style x:Key="TileButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="12" Padding="4,6"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ============ page tabs in the expanded header ============ -->
         <Style x:Key="TabButton" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Width" Value="24" />
+            <Setter Property="Width" Value="23" />
             <Setter Property="Height" Value="22" />
-            <Setter Property="Opacity" Value="0.45" />
+            <Setter Property="Opacity" Value="0.6" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -258,7 +299,11 @@
     </Window.Resources>
 
     <Grid x:Name="Root" HorizontalAlignment="Center" VerticalAlignment="Top">
-        <StackPanel x:Name="ShapeRow" Orientation="Horizontal" VerticalAlignment="Top">
+        <StackPanel x:Name="ShapeRow" Orientation="Horizontal" VerticalAlignment="Top" RenderTransformOrigin="0.5,0">
+            <StackPanel.RenderTransform>
+                <!-- Squeezed to a thin line while you type (Behavior → Hide while typing) -->
+                <ScaleTransform x:Name="ShapeScale" ScaleX="1" ScaleY="1" />
+            </StackPanel.RenderTransform>
 
             <!-- Keeps the notch centered while the timer bubble is shown on the right. -->
             <Border x:Name="BubbleSpacer" Width="0" Visibility="Collapsed" IsHitTestVisible="False" />
@@ -321,17 +366,35 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Mic / camera in use -->
-                                <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" VerticalAlignment="Center"
-                                            Margin="0,0,6,0" Visibility="Collapsed" IsHitTestVisible="False">
-                                    <Ellipse x:Name="CamDot" Width="7" Height="7" Fill="#3DDC84" Margin="0,0,3,0" />
-                                    <Ellipse x:Name="MicDot" Width="7" Height="7" Fill="#FF9F0A" />
+                                <StackPanel x:Name="LeftCluster" Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                    <!-- Tiny cover while music plays (Dynamic Island style) -->
+                                    <Border x:Name="CollapsedArt" Width="22" Height="22" CornerRadius="6" Margin="0,0,8,0"
+                                            VerticalAlignment="Center" Visibility="Collapsed">
+                                        <Border.Background>
+                                            <ImageBrush x:Name="CollapsedArtBrush" Stretch="UniformToFill" />
+                                        </Border.Background>
+                                    </Border>
+
+                                    <!-- Mic / camera in use -->
+                                    <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" VerticalAlignment="Center"
+                                                Margin="0,0,6,0" Visibility="Collapsed">
+                                        <Ellipse x:Name="CamDot" Width="7" Height="7" Fill="#3DDC84" Margin="0,0,3,0" />
+                                        <Ellipse x:Name="MicDot" Width="7" Height="7" Fill="#FF9F0A" />
+                                    </StackPanel>
+
+                                    <!-- Microphone muted -->
+                                    <TextBlock x:Name="MicMutedIcon" FontFamily="{StaticResource IconFont}" FontSize="12" Text="&#xE720;"
+                                               Foreground="#FF453A" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed" />
                                 </StackPanel>
 
                                 <TextBlock x:Name="CollapsedTime" Grid.Column="1"
                                            Style="{StaticResource NotchText}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           FontWeight="SemiBold" Text="12:00 PM" />
+                                           FontWeight="SemiBold" Text="12:00 PM">
+                                    <TextBlock.RenderTransform>
+                                        <TranslateTransform x:Name="TimeRoll" />
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
 
                                 <!-- Current lyric line (optional, replaces the time while playing) -->
                                 <controls:MarqueeText x:Name="CollapsedLyric" Grid.Column="1"
@@ -341,6 +404,10 @@
                                                       TextElement.FontFamily="{DynamicResource TextFont}"
                                                       TextElement.FontSize="{DynamicResource FontBase}"
                                                       TextElement.FontWeight="SemiBold" />
+
+                                <!-- Internet speed (optional, only while nothing plays) -->
+                                <TextBlock x:Name="CollapsedNet" Grid.Column="2" Style="{StaticResource SubText}" FontWeight="SemiBold"
+                                           VerticalAlignment="Center" Margin="10,0,0,0" Visibility="Collapsed" Text="↓ 0 KB/s" />
 
                                 <Border x:Name="CollapsedBarsHost" Grid.Column="2"
                                         Width="0" Opacity="0" HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -444,14 +511,16 @@
                                                HorizontalAlignment="Left" VerticalAlignment="Center" Text="Mon, Nov 9" />
 
                                     <StackPanel x:Name="TabStrip" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button x:Name="TabMusic" Style="{StaticResource TabButton}" Tag="Music" ToolTip="Music" Content="&#xE8D6;" Click="Tab_Click" />
-                                        <Button x:Name="TabLyrics" Style="{StaticResource TabButton}" Tag="Lyrics" ToolTip="Lyrics" Content="&#xE8BD;" Click="Tab_Click" />
-                                        <Button x:Name="TabCalendar" Style="{StaticResource TabButton}" Tag="Calendar" ToolTip="Calendar" Content="&#xE787;" Click="Tab_Click" />
-                                        <Button x:Name="TabWeather" Style="{StaticResource TabButton}" Tag="Weather" ToolTip="Weather" Content="&#xE706;" Click="Tab_Click" />
-                                        <Button x:Name="TabSystem" Style="{StaticResource TabButton}" Tag="System" ToolTip="System" Content="&#xE9D9;" Click="Tab_Click" />
-                                        <Button x:Name="TabTimer" Style="{StaticResource TabButton}" Tag="Timer" ToolTip="Timer" Content="&#xE916;" Click="Tab_Click" />
-                                        <Button x:Name="TabShelf" Style="{StaticResource TabButton}" Tag="Shelf" ToolTip="File shelf" Content="&#xE8B7;" Click="Tab_Click" />
-                                        <Button x:Name="TabNotes" Style="{StaticResource TabButton}" Tag="Notes" ToolTip="Notes" Content="&#xE70B;" Click="Tab_Click" />
+                                        <Button x:Name="TabMusic" Style="{StaticResource TabButton}" Tag="Music" ToolTip="Music" Content="&#xE8D6;" Foreground="#FF5E7E" Click="Tab_Click" />
+                                        <Button x:Name="TabLyrics" Style="{StaticResource TabButton}" Tag="Lyrics" ToolTip="Lyrics" Content="&#xE8BD;" Foreground="#C084FC" Click="Tab_Click" />
+                                        <Button x:Name="TabCalendar" Style="{StaticResource TabButton}" Tag="Calendar" ToolTip="Calendar" Content="&#xE787;" Foreground="#FF6B57" Click="Tab_Click" />
+                                        <Button x:Name="TabWeather" Style="{StaticResource TabButton}" Tag="Weather" ToolTip="Weather" Content="&#xE706;" Foreground="#5AC8FA" Click="Tab_Click" />
+                                        <Button x:Name="TabSystem" Style="{StaticResource TabButton}" Tag="System" ToolTip="System" Content="&#xE9D9;" Foreground="#34D399" Click="Tab_Click" />
+                                        <Button x:Name="TabTimer" Style="{StaticResource TabButton}" Tag="Timer" ToolTip="Timer &amp; focus" Content="&#xE916;" Foreground="#FF9F0A" Click="Tab_Click" />
+                                        <Button x:Name="TabShelf" Style="{StaticResource TabButton}" Tag="Shelf" ToolTip="File shelf" Content="&#xE8B7;" Foreground="#FFD60A" Click="Tab_Click" />
+                                        <Button x:Name="TabNotes" Style="{StaticResource TabButton}" Tag="Notes" ToolTip="Notes" Content="&#xE70B;" Foreground="#F472B6" Click="Tab_Click" />
+                                        <Button x:Name="TabSound" Style="{StaticResource TabButton}" Tag="Sound" ToolTip="Sound: outputs &amp; app volume" Content="&#xE7F5;" Foreground="#2DD4BF" Click="Tab_Click" />
+                                        <Button x:Name="TabControls" Style="{StaticResource TabButton}" Tag="Controls" ToolTip="Quick controls" Content="&#xE9E9;" Foreground="#60A5FA" Click="Tab_Click" />
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -460,6 +529,9 @@
                                             <Ellipse x:Name="ExpCamDot" Width="6" Height="6" Fill="#3DDC84" Margin="0,0,3,0" />
                                             <Ellipse x:Name="ExpMicDot" Width="6" Height="6" Fill="#FF9F0A" />
                                         </StackPanel>
+                                        <TextBlock x:Name="ExpMicMuted" FontFamily="{StaticResource IconFont}" FontSize="11" Text="&#xE720;"
+                                                   Foreground="#FF453A" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed"
+                                                   ToolTip="Microphone muted (Win + Alt + M)" />
                                         <TextBlock x:Name="ExpandedTime" Style="{StaticResource NotchText}" FontSize="{DynamicResource FontSmall}"
                                                    FontWeight="SemiBold" VerticalAlignment="Center" Text="12:00 PM" />
                                     </StackPanel>
@@ -556,31 +628,60 @@
                                             </Grid>
 
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <Button x:Name="ShuffleButton" Style="{StaticResource SmallMediaButton}" Margin="0,0,2,0"
+                                                        ToolTip="Shuffle" Click="ShuffleButton_Click" Content="&#xE8B1;" />
                                                 <Button x:Name="PreviousButton" Style="{StaticResource MediaButton}" Click="PreviousButton_Click" Content="&#xE892;" />
                                                 <Button x:Name="PlayPauseButton" Style="{StaticResource MediaButton}" Width="38" Height="38" FontSize="19"
-                                                        Margin="8,0,8,0" Click="PlayPauseButton_Click" Content="&#xE768;" />
+                                                        Margin="6,0,6,0" Click="PlayPauseButton_Click" Content="&#xE768;" />
                                                 <Button x:Name="NextButton" Style="{StaticResource MediaButton}" Click="NextButton_Click" Content="&#xE893;" />
+                                                <Button x:Name="RepeatModeButton" Style="{StaticResource SmallMediaButton}" Margin="2,0,0,0"
+                                                        ToolTip="Repeat" Click="RepeatModeButton_Click" Content="&#xE8EE;" />
                                             </StackPanel>
 
-                                            <Button x:Name="SettingsButton" Grid.Column="2" Style="{StaticResource MediaButton}"
-                                                    HorizontalAlignment="Right" FontSize="13" ToolTip="Crest settings"
-                                                    Click="SettingsButton_Click" Content="&#xE713;" />
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button x:Name="OutputButton" Style="{StaticResource SmallMediaButton}" Foreground="#2DD4BF"
+                                                        ToolTip="Sound output &amp; app volume" Click="OutputButton_Click" Content="&#xE7F5;" />
+                                                <Button x:Name="SettingsButton" Style="{StaticResource SmallMediaButton}" Foreground="#A1A1AA"
+                                                        ToolTip="Crest settings" Click="SettingsButton_Click" Content="&#xE713;" />
+                                            </StackPanel>
                                         </Grid>
                                     </Grid>
 
                                     <!-- ===== Lyrics ===== -->
                                     <Grid x:Name="PageLyrics" Visibility="Collapsed">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <DockPanel x:Name="LyricsFooter" Grid.Row="1" Margin="0,2,0,0">
+                                            <StackPanel x:Name="LyricsSyncPanel" DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <Button Style="{StaticResource TextButton}" Content="− 0.5 s" Tag="-500" Click="LyricsOffset_Click"
+                                                        ToolTip="Lyrics are late: show them earlier" Margin="0,0,8,0" />
+                                                <TextBlock x:Name="LyricsOffsetText" Style="{StaticResource SubText}" Text="in sync" Margin="0,0,8,0" />
+                                                <Button Style="{StaticResource TextButton}" Content="+ 0.5 s" Tag="500" Click="LyricsOffset_Click"
+                                                        ToolTip="Lyrics are early: show them later" />
+                                            </StackPanel>
+                                            <TextBlock Style="{StaticResource SubText}" Opacity="0.7" Text="Lyrics by LRCLIB" />
+                                        </DockPanel>
                                         <StackPanel x:Name="SyncedLyricsPanel" VerticalAlignment="Center" Visibility="Collapsed">
-                                            <TextBlock x:Name="LyricPrev" Style="{StaticResource SubText}" TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="LyricPrev" Style="{StaticResource SubText}" TextAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform x:Name="LyricPrevShift" />
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
                                             <TextBlock x:Name="LyricCurrent" Style="{StaticResource NotchText}" FontSize="{DynamicResource FontLarge}"
                                                        FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="46" Margin="0,5,0,5">
                                                 <TextBlock.RenderTransform>
                                                     <TranslateTransform x:Name="LyricShift" />
                                                 </TextBlock.RenderTransform>
                                             </TextBlock>
-                                            <TextBlock x:Name="LyricNext" Style="{StaticResource SubText}" TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="LyricNext" Style="{StaticResource SubText}" TextAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform x:Name="LyricNextShift" />
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
                                         </StackPanel>
-                                        <ScrollViewer x:Name="PlainLyricsScroller" Visibility="Collapsed"
+                                        <ScrollViewer x:Name="PlainLyricsScroller" Visibility="Collapsed" Grid.Row="0"
                                                       VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                                             <TextBlock x:Name="PlainLyricsText" Style="{StaticResource NotchText}" TextWrapping="Wrap" TextAlignment="Center" />
                                         </ScrollViewer>
@@ -685,9 +786,11 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Button x:Name="ModeTimerBtn" Style="{StaticResource ChipButton}" Content="Timer" Click="TimerMode_Click" Tag="Timer" />
                                                 <Button x:Name="ModeStopwatchBtn" Style="{StaticResource ChipButton}" Content="Stopwatch" Click="TimerMode_Click" Tag="Stopwatch" />
+                                                <Button x:Name="ModeFocusBtn" Style="{StaticResource ChipButton}" Content="Focus" Click="TimerMode_Click" Tag="Focus" />
                                             </StackPanel>
                                             <TextBlock x:Name="TimerBig" Style="{StaticResource NotchText}" FontFamily="Segoe UI Variable Display, Segoe UI"
                                                        FontSize="34" FontWeight="SemiBold" Text="05:00" Margin="0,2,0,0" />
+                                            <TextBlock x:Name="TimerSub" Style="{StaticResource SubText}" FontWeight="SemiBold" Visibility="Collapsed" Text="Focus · round 1" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <WrapPanel x:Name="TimerPresets" Width="150" HorizontalAlignment="Right">
@@ -752,6 +855,29 @@
                                             <StackPanel x:Name="ClipboardList" />
                                         </StackPanel>
                                     </Grid>
+
+                                    <!-- ===== Sound: output device + per-app volume ===== -->
+                                    <Grid x:Name="PageSound" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="5*" />
+                                            <ColumnDefinition Width="6*" />
+                                        </Grid.ColumnDefinitions>
+                                        <DockPanel Margin="0,0,10,0">
+                                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SubText}" FontWeight="SemiBold" Text="OUTPUT" Margin="2,0,0,4" />
+                                            <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                                <StackPanel x:Name="OutputList" />
+                                            </ScrollViewer>
+                                        </DockPanel>
+                                        <DockPanel Grid.Column="1">
+                                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SubText}" FontWeight="SemiBold" Text="APPS" Margin="2,0,0,4" />
+                                            <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                                <StackPanel x:Name="MixerList" />
+                                            </ScrollViewer>
+                                        </DockPanel>
+                                    </Grid>
+
+                                    <!-- ===== Controls: quick toggles ===== -->
+                                    <UniformGrid x:Name="PageControls" Visibility="Collapsed" Columns="4" Rows="2" />
                                 </Grid>
                             </Grid>
                         </Grid>

@@ -57,6 +57,22 @@ namespace Crest.Models
             "Light", "Bright notch, dark text",
             "#F4F4F7", 1.0, "#111114", "#111114", "#111114", false);
 
-        public static IReadOnlyList<ThemePreset> All { get; } = new[] { Classic, Glass, Album, Light };
+        public static readonly ThemePreset Neon = new(
+            "Neon", "Electric pink and cyan",
+            "#0B0820", 1.0, "#F5F3FF", "#FF2BD6", "#22D3EE", false);
+
+        public static readonly ThemePreset Sunset = new(
+            "Sunset", "Warm peach and gold",
+            "#1A0B12", 1.0, "#FFF1E6", "#FF8A5B", "#FFB547", false);
+
+        public static readonly ThemePreset Ocean = new(
+            "Ocean", "Deep blue, sea-green bars",
+            "#04141F", 1.0, "#E0F7FF", "#38BDF8", "#2DD4BF", false);
+
+        public static readonly ThemePreset Minimal = new(
+            "Minimal", "Soft gray, nothing loud",
+            "#0A0A0A", 0.92, "#D4D4D8", "#A1A1AA", "#71717A", false);
+
+        public static IReadOnlyList<ThemePreset> All { get; } = new[] { Classic, Glass, Album, Light, Neon, Sunset, Ocean, Minimal };
     }
 }

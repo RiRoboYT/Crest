@@ -139,6 +139,29 @@ namespace Crest.Models
         private bool _middleClickMute = true;
         private bool _hotkeyEnabled = true;
 
+        // ---------- v1.3 ----------
+        private bool _showArtInCollapsed = true;
+        private bool _showShuffleRepeat = true;
+        private bool _showOutputButton = true;
+        private bool _lyricsSyncButtons = true;
+        private bool _lockKeysActivity = true;
+        private bool _batteryAlerts = true;
+        private bool _micMuteHotkey = true;
+        private bool _micMutedIndicator = true;
+        private bool _smoothTransitions = true;
+        private string _spectrumStyle = "Mirrored";
+        private bool _pageSound = true;
+        private bool _pageControls = true;
+        private int _focusWorkMinutes = 25;
+        private int _focusBreakMinutes = 5;
+        private bool _focusQuiet = true;
+        private bool _screenshotsToShelf = true;
+        private bool _clipboardImages = true;
+        private bool _netSpeedInCollapsed = false;
+        private bool _albumColorShuffle = false;
+        private bool _hideWhileTyping = false;
+        private bool _tourShown = false;
+
         // ---------- Behavior ----------
         private bool _startWithWindows = false;
         private bool _alwaysOnTop = true;
@@ -251,6 +274,46 @@ namespace Crest.Models
         public bool MiddleClickMute { get => _middleClickMute; set => Set(ref _middleClickMute, value); }
         /// <summary>Win + Alt + N opens / closes the notch.</summary>
         public bool HotkeyEnabled { get => _hotkeyEnabled; set => Set(ref _hotkeyEnabled, value); }
+
+        // ================================================================ v1.3
+        /// <summary>Tiny cover art on the left of the closed notch while music plays.</summary>
+        public bool ShowArtInCollapsed { get => _showArtInCollapsed; set => Set(ref _showArtInCollapsed, value); }
+        public bool ShowShuffleRepeat { get => _showShuffleRepeat; set => Set(ref _showShuffleRepeat, value); }
+        /// <summary>Speaker button in the player that opens the Sound page.</summary>
+        public bool ShowOutputButton { get => _showOutputButton; set => Set(ref _showOutputButton, value); }
+        /// <summary>"Lyrics early / late" buttons on the Lyrics page.</summary>
+        public bool LyricsSyncButtons { get => _lyricsSyncButtons; set => Set(ref _lyricsSyncButtons, value); }
+        public bool LockKeysActivity { get => _lockKeysActivity; set => Set(ref _lockKeysActivity, value); }
+        /// <summary>Low battery (20 % / 10 %) and fully charged pop-ups.</summary>
+        public bool BatteryAlerts { get => _batteryAlerts; set => Set(ref _batteryAlerts, value); }
+        /// <summary>Win + Alt + M mutes / unmutes the microphone.</summary>
+        public bool MicMuteHotkey { get => _micMuteHotkey; set => Set(ref _micMuteHotkey, value); }
+        /// <summary>Red mic icon in the notch while the microphone is muted (+ a pop-up when it changes).</summary>
+        public bool MicMutedIndicator { get => _micMutedIndicator; set => Set(ref _micMutedIndicator, value); }
+        /// <summary>Icons morph, the clock rolls, covers fade in.</summary>
+        public bool SmoothTransitions { get => _smoothTransitions; set => Set(ref _smoothTransitions, value); }
+        /// <summary>Bars, Mirrored, Dots or Wave.</summary>
+        public string SpectrumStyle
+        {
+            get => _spectrumStyle;
+            set => Set(ref _spectrumStyle, value is "Bars" or "Mirrored" or "Dots" or "Wave" ? value : "Mirrored");
+        }
+        public bool PageSound { get => _pageSound; set => Set(ref _pageSound, value); }
+        public bool PageControls { get => _pageControls; set => Set(ref _pageControls, value); }
+        public int FocusWorkMinutes { get => _focusWorkMinutes; set => Set(ref _focusWorkMinutes, Math.Clamp(value, 5, 120)); }
+        public int FocusBreakMinutes { get => _focusBreakMinutes; set => Set(ref _focusBreakMinutes, Math.Clamp(value, 1, 30)); }
+        /// <summary>No pop-ups (except the volume indicator) during a focus block.</summary>
+        public bool FocusQuiet { get => _focusQuiet; set => Set(ref _focusQuiet, value); }
+        public bool ScreenshotsToShelf { get => _screenshotsToShelf; set => Set(ref _screenshotsToShelf, value); }
+        public bool ClipboardImages { get => _clipboardImages; set => Set(ref _clipboardImages, value); }
+        /// <summary>Download / upload speed in the closed notch when nothing is playing.</summary>
+        public bool NetSpeedInCollapsed { get => _netSpeedInCollapsed; set => Set(ref _netSpeedInCollapsed, value); }
+        /// <summary>With album colors: each song picks one of its cover's colors instead of always the main one.</summary>
+        public bool AlbumColorShuffle { get => _albumColorShuffle; set => Set(ref _albumColorShuffle, value); }
+        /// <summary>The notch shrinks to a thin line while you type and comes back when you stop.</summary>
+        public bool HideWhileTyping { get => _hideWhileTyping; set => Set(ref _hideWhileTyping, value); }
+        /// <summary>The first-run tour has been shown.</summary>
+        public bool TourShown { get => _tourShown; set => Set(ref _tourShown, value); }
 
         // ================================================================ Behavior
         public bool StartWithWindows { get => _startWithWindows; set => Set(ref _startWithWindows, value); }

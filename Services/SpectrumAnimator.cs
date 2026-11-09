@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
@@ -36,6 +37,8 @@ namespace Crest.Services
         private double _maxHeight = 16;
         private Brush _brush;
         private int _intervalMs = 100;
+        private string _style = "Mirrored";   // Bars | Mirrored | Dots | Wave
+        private double _wavePhase;
 
         private AudioSpectrumService? _analyzer;
         private double[] _levels = Array.Empty<double>();
@@ -76,6 +79,14 @@ namespace Crest.Services
 
             if (rebuild) Rebuild();
             if (_running && !_runningReal) _timer.Interval = TimeSpan.FromMilliseconds(_intervalMs);
+        }
+
+        /// <summary>Bars (grow up), Mirrored (grow from the middle), Dots (bounce) or Wave (smooth, flowing).</summary>
+        public void SetStyle(string style)
+        {
+            if (style == _style) return;
+            _style = style;
+            Rebuild();
         }
 
         /// <summary>Real mode when an analyzer is given, fake mode when null.</summary>
@@ -157,26 +168,49 @@ namespace Crest.Services
             _levels = new double[_barCount];
             _smoothed = new double[_barCount];
 
+            double dot = Math.Max(3, _barWidth + 1);
             foreach (var host in _hosts)
             {
                 host.Children.Clear();
                 host.Height = _maxHeight;
                 for (int i = 0; i < _barCount; i++)
                 {
-                    var bar = new Rectangle
+                    FrameworkElement bar;
+                    if (_style == "Dots")
                     {
-                        Width = _barWidth,
-                        Height = _maxHeight,
-                        RadiusX = _barWidth / 2,
-                        RadiusY = _barWidth / 2,
-                        Fill = _brush,
-                        Margin = new Thickness(i == 0 ? 0 : _spacing, 0, 0, 0),
-                        VerticalAlignment = VerticalAlignment.Center,
-                        RenderTransformOrigin = new Point(0.5, 0.5), // grow from the middle
-                        RenderTransform = _transforms[i],
-                        IsHitTestVisible = false,
-                        SnapsToDevicePixels = false
-                    };
+                        // A dot that bounces up and down with the level.
+                        var shift = new TranslateTransform();
+                        BindingOperations.SetBinding(shift, TranslateTransform.YProperty, new Binding(nameof(ScaleTransform.ScaleY))
+                        {
+                            Source = _transforms[i],
+                            Converter = new LevelToOffset(RestScale, (_maxHeight - dot) / 2)
+                        });
+                        bar = new Ellipse
+                        {
+                            Width = dot,
+                            Height = dot,
+                            Fill = _brush,
+                            RenderTransform = shift
+                        };
+                    }
+                    else
+                    {
+                        bar = new Rectangle
+                        {
+                            Width = _barWidth,
+                            Height = _maxHeight,
+                            RadiusX = _barWidth / 2,
+                            RadiusY = _barWidth / 2,
+                            Fill = _brush,
+                            // Bars grow from the bottom; the others from the middle.
+                            RenderTransformOrigin = new Point(0.5, _style == "Bars" ? 1 : 0.5),
+                            RenderTransform = _transforms[i]
+                        };
+                    }
+                    bar.Margin = new Thickness(i == 0 ? 0 : _spacing, 0, 0, 0);
+                    bar.VerticalAlignment = VerticalAlignment.Center;
+                    bar.IsHitTestVisible = false;
+                    bar.SnapsToDevicePixels = false;
                     host.Children.Add(bar);
                 }
             }
@@ -191,11 +225,23 @@ namespace Crest.Services
             var duration = new Duration(TimeSpan.FromMilliseconds(_intervalMs * 0.95));
             double rest = RestScale;
 
+            _wavePhase += 0.9;
+            double swell = 0.55 + 0.45 * _rng.NextDouble();
             for (int i = 0; i < _transforms.Count; i++)
             {
-                // Middle bars tend to be taller → looks more like a real spectrum.
-                double center = 1 - Math.Abs(i - (_transforms.Count - 1) / 2.0) / Math.Max(1, _transforms.Count);
-                double target = rest + (1 - rest) * Math.Pow(_rng.NextDouble(), 1.3) * (0.55 + 0.45 * center);
+                double target;
+                if (_style == "Wave")
+                {
+                    // A smooth wave that travels across the bars.
+                    double wave = 0.5 + 0.5 * Math.Sin(_wavePhase - i * 0.85);
+                    target = rest + (1 - rest) * (0.15 + 0.85 * wave) * swell;
+                }
+                else
+                {
+                    // Middle bars tend to be taller → looks more like a real spectrum.
+                    double center = 1 - Math.Abs(i - (_transforms.Count - 1) / 2.0) / Math.Max(1, _transforms.Count);
+                    target = rest + (1 - rest) * Math.Pow(_rng.NextDouble(), 1.3) * (0.55 + 0.45 * center);
+                }
 
                 var anim = new DoubleAnimation(target, duration) { EasingFunction = Ease };
                 anim.Freeze();
@@ -210,9 +256,12 @@ namespace Crest.Services
             _analyzer.ComputeBands(_levels);
             double rest = RestScale;
 
-            for (int i = 0; i < _transforms.Count; i++)
+            int n = _transforms.Count;
+            for (int i = 0; i < n; i++)
             {
                 double target = _levels[i];
+                if (_style == "Wave")   // blend neighbours → one flowing shape
+                    target = 0.25 * _levels[Math.Max(0, i - 1)] + 0.5 * _levels[i] + 0.25 * _levels[Math.Min(n - 1, i + 1)];
                 double current = _smoothed[i];
                 // Fast attack, slower release → punchy but not jittery.
                 current += (target - current) * (target > current ? 0.65 : 0.2);
@@ -228,5 +277,28 @@ namespace Crest.Services
             foreach (var t in _transforms)
                 t.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
         }
+    }
+
+    /// <summary>Dots style: turns a bar level (ScaleY) into a vertical offset (high level = higher dot).</summary>
+    internal sealed class LevelToOffset : IValueConverter
+    {
+        private readonly double _rest;
+        private readonly double _range;
+
+        public LevelToOffset(double rest, double range)
+        {
+            _rest = rest;
+            _range = range;
+        }
+
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            double scale = value is double d ? d : _rest;
+            double level = Math.Clamp((scale - _rest) / Math.Max(0.01, 1 - _rest), 0, 1);
+            return _range - 2 * _range * level;   // bottom → top
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            => Binding.DoNothing;
     }
 }
