@@ -374,7 +374,7 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
   background: var(--n-bg); color: var(--n-text);
   border-radius: 0 0 var(--r) var(--r);
   font-family: "Segoe UI Variable Text", "Segoe UI", var(--font);
-  transition: width .5s var(--ease-spring), height .5s var(--ease-spring), border-radius .45s var(--ease-out), background-color .6s;
+  transition: width .5s var(--ease-spring), height .5s var(--ease-spring), border-radius .45s var(--ease-out), background-color .6s, box-shadow .8s;
   user-select: none;
 }
 .notch::before, .notch::after { content: ""; position: absolute; top: 0; width: 10px; height: 10px; transition: background .6s; }
@@ -416,11 +416,13 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
 @media (prefers-reduced-motion: reduce) { .n-title.scroll span { animation: none; } .n-title { text-overflow: ellipsis; } }
 .n-artist { font-size: 11px; color: var(--n-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.n-expanded { width: 420px; height: 172px; padding: 10px 22px 12px; display: grid; grid-template-rows: auto 1fr auto auto; }
-.n-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--n-sub); }
+.n-expanded { width: 420px; height: 172px; padding: 8px 20px 10px; display: grid; grid-template-rows: auto 1fr; }
+.n-head { display: flex; justify-content: space-between; align-items: center; height: 24px; font-size: 11px; color: var(--n-sub); }
+.n-head .n-date { min-width: 70px; }
+.n-head b { min-width: 70px; text-align: right; }
 .n-head b { color: var(--n-text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.n-track { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; cursor: pointer; }
-.n-track .n-art { width: 52px; height: 52px; border-radius: 11px; }
+.n-track { display: flex; align-items: center; gap: 12px; margin: 2px 0 2px; cursor: pointer; }
+.n-track .n-art { width: 48px; height: 48px; border-radius: 11px; }
 .n-track .n-title { font-size: 15px; }
 .n-track .n-artist { font-size: 13px; }
 .n-progress { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; gap: 6px; font-size: 11px; color: var(--n-sub); font-variant-numeric: tabular-nums; }
@@ -445,9 +447,95 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
 .n-range::-moz-range-thumb { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--n-text); }
 .n-range:hover::-webkit-slider-thumb { scale: 1.3; }
 
+/* v1.2: activities, pages, bubble, privacy dots, glow */
+.notch[data-state="activity"] { --w: 330px; --h: 58px; --r: 24px; }
+.notch[data-state="activity"] .n-activity { opacity: 1; pointer-events: auto; transition-delay: .14s; }
+.notch.dots[data-state="idle"] { --w: 138px; }
+.notch.dots[data-state="collapsed"] { --w: 242px; }
+.notch.glow { box-shadow: 0 12px 44px -10px var(--glow, transparent); }
+.n-dots { display: none; gap: 3px; margin-right: 6px; flex: none; }
+.notch.dots .n-dots { display: flex; }
+.n-dots i { width: 7px; height: 7px; border-radius: 50%; animation: dot-pulse 2s ease-in-out infinite; }
+.n-dots .cam { background: #30d158; }
+.n-dots .mic { background: #ff9f0a; animation-delay: -1s; }
+@keyframes dot-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .n-dots i { animation: none; } }
+
+.n-activity { width: 330px; height: 58px; display: flex; align-items: center; gap: 11px; padding: 0 16px 0 12px; }
+.n-act-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--act, #30d158); transition: background-color .3s; }
+.n-act-icon svg { width: 18px; height: 18px; fill: #fff; }
+.n-act-meta { flex: 1; min-width: 0; }
+.n-act-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.n-act-sub { font-size: 11px; color: var(--n-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.n-act-level { height: 4px; border-radius: 2px; background: var(--n-track); margin-top: 7px; overflow: hidden; display: none; }
+.n-activity.has-level .n-act-level { display: block; }
+.n-activity.has-level .n-act-sub { display: none; }
+.n-act-level i { display: block; height: 100%; background: var(--n-accent); transform-origin: 0 50%; scale: var(--lv, 0) 1; transition: scale .25s var(--ease-out); }
+.n-act-value { font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.n-bubble {
+  position: absolute; top: 0; left: calc(100% + 18px); height: 36px; width: 0; opacity: 0; overflow: hidden;
+  border-radius: 0 0 14px 14px; background: var(--n-bg); color: var(--n-text);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap;
+  transition: width .6s var(--ease-spring), opacity .35s, background-color .6s;
+}
+.notch.timer:not([data-state="expanded"]) .n-bubble { width: 82px; opacity: 1; }
+.n-bubble svg { width: 13px; height: 13px; fill: #ff9f0a; flex: none; }
+
+.n-tabs { display: flex; gap: 2px; }
+.n-tab { width: 24px; height: 22px; border-radius: 7px; display: grid; place-items: center; opacity: .42; transition: opacity .2s, background-color .2s; }
+.n-tab:hover { background: color-mix(in srgb, var(--n-text) 14%, transparent); opacity: .85; }
+.n-tab.on { opacity: 1; }
+.n-tab svg { width: 13px; height: 13px; fill: none; stroke: var(--n-text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.n-pages { position: relative; min-height: 0; overflow: hidden; margin-top: 4px; }
+.n-page { position: absolute; inset: 0; opacity: 0; pointer-events: none; translate: var(--from, 18px) 0; transition: opacity .25s, translate .32s var(--ease-out); }
+.n-page.on { opacity: 1; pointer-events: auto; translate: 0 0; }
+.n-page[data-page="music"] { display: grid; grid-template-rows: 1fr auto auto; }
+.n-lyrics { display: grid; place-content: center; justify-items: center; text-align: center; gap: 4px; height: 100%; }
+.n-lyrics .l-prev, .n-lyrics .l-next { font-size: 11px; color: var(--n-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
+.n-lyrics .l-cur { font-size: 15px; font-weight: 600; line-height: 1.3; max-width: 360px; transition: opacity .22s, translate .25s var(--ease-out); }
+.n-lyrics .l-cur.swap { opacity: .15; translate: 0 7px; }
+.n-weather { display: flex; align-items: center; gap: 12px; height: 100%; }
+.n-weather .w-icon { font-size: 34px; line-height: 1; }
+.n-weather .w-temp { font-size: 28px; font-weight: 600; line-height: 1; }
+.n-weather .w-desc { font-size: 11px; color: var(--n-sub); margin-top: 5px; }
+.n-weather .w-hours { margin-left: auto; display: flex; gap: 10px; text-align: center; font-size: 11px; }
+.n-weather .w-hours span { display: grid; gap: 3px; color: var(--n-sub); }
+.n-weather .w-hours b { color: var(--n-text); font-weight: 600; }
+.n-system { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; align-content: center; height: 100%; }
+.n-meter { font-size: 11px; color: var(--n-sub); }
+.n-meter div { display: flex; justify-content: space-between; }
+.n-meter b { color: var(--n-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.n-meter .bar { display: block; height: 5px; border-radius: 3px; background: var(--n-track); margin-top: 5px; overflow: hidden; }
+.n-meter .bar i { display: block; width: 100%; height: 100%; background: var(--n-accent); transform-origin: 0 50%; scale: var(--m, .3) 1; transition: scale .8s var(--ease-out); }
+.n-timer { display: flex; align-items: center; justify-content: space-between; height: 100%; gap: 12px; }
+.n-timer .t-big { font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.n-timer .t-mode { font-size: 11px; color: var(--n-sub); margin-bottom: 6px; }
+.n-timer .t-chips { display: flex; flex-wrap: wrap; gap: 5px; max-width: 170px; justify-content: flex-end; }
+.n-chip { padding: 4px 9px; border-radius: 8px; background: color-mix(in srgb, var(--n-text) 14%, transparent); font-size: 11px; font-weight: 600; color: var(--n-text); transition: opacity .2s; }
+.n-chip:hover { opacity: .7; }
+
 /* Presets */
 .notch[data-preset="glass"] { --n-bg: rgba(20,20,26,.72); }
 .notch[data-preset="light"] { --n-bg: #f4f4f7; --n-text: #111114; --n-sub: rgba(17,17,20,.6); --n-track: rgba(17,17,20,.16); --n-accent: #111114; }
+
+/* =====================================================================
+   What's new in 1.2
+   ===================================================================== */
+.new-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 1000px) { .new-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .new-grid { grid-template-columns: 1fr; } }
+.new-grid .new-card { min-height: 220px; grid-column: auto; grid-row: auto; }
+.new-card .ico {
+  width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 18px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c, var(--violet)) 85%, #fff 0%), color-mix(in srgb, var(--c, var(--violet)) 55%, #000));
+  box-shadow: 0 10px 30px -10px var(--c, var(--violet)); transition: translate .5s var(--ease-spring), rotate .5s var(--ease-spring);
+}
+.new-card:hover .ico { translate: 0 -4px; rotate: -6deg; }
+.new-card .ico svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.new-card h3 { margin-top: 0; }
+.new-card .badge { position: absolute; top: 22px; right: 22px; font: 700 10px var(--mono); letter-spacing: .14em; padding: 4px 8px; border-radius: 999px; color: #fff; background: var(--grad); }
 
 /* =====================================================================
    Ticker
@@ -792,6 +880,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 <header class="nav" id="nav">
   <a href="#top" class="brand" data-cursor="hover"><span class="logo"></span>Crest</a>
   <nav class="nav-links" aria-label="Main">
+    <a href="#new" data-cursor="hover">What's new</a>
     <a href="#features" data-cursor="hover">Features</a>
     <a href="#story" data-cursor="hover">How it feels</a>
     <a href="#settings" data-cursor="hover">Settings</a>
@@ -816,7 +905,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <span class="line"><span class="word" style="transition-delay:.10s">The</span> <span class="word" style="transition-delay:.16s">notch</span> <span class="word" style="transition-delay:.22s">your</span></span>
         <span class="line"><span class="word grad-text shimmer" style="transition-delay:.30s">Windows</span> <span class="word" style="transition-delay:.38s">never</span> <span class="word" style="transition-delay:.46s">had.</span></span>
       </h1>
-      <p class="lead fade-up" style="transition-delay:.55s">Crest puts a living, Dynamic&nbsp;Island-style notch at the top of your screen. The time when you're working, your music when you're listening — and full controls the moment you hover.</p>
+      <p class="lead fade-up" style="transition-delay:.55s">Crest puts a living, Dynamic&nbsp;Island-style notch at the top of your screen. The time when you're working, your music when you're listening — plus lyrics, live activities and handy widgets the moment you hover.</p>
       <div class="hero-ctas fade-up" style="transition-delay:.65s">
         <a class="btn btn-primary magnetic js-download" href="#download" data-cursor="label" data-cursor-label="Get it">
           <span class="btn-label">
@@ -856,6 +945,18 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <button class="chip" id="btnSkip" data-cursor="hover">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l9-7zM15 5h3v14h-3z"/></svg>Next song (peek)
         </button>
+        <button class="chip" id="btnCharge" data-cursor="hover">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Plug in charger
+        </button>
+        <button class="chip" id="btnBuds" data-cursor="hover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5" fill="currentColor"/><rect x="17" y="14" width="4" height="7" rx="1.5" fill="currentColor"/></svg>Connect headphones
+        </button>
+        <button class="chip" id="btnTimer" data-cursor="hover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>1-min timer
+        </button>
+        <button class="chip" id="btnCall" data-cursor="hover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>Join a call
+        </button>
         <span class="swatches" role="group" aria-label="Theme preset">
           <button class="swatch on" data-preset="classic" title="Classic" data-cursor="hover"></button>
           <button class="swatch" data-preset="glass" title="Glass" data-cursor="hover"></button>
@@ -871,6 +972,67 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 <div class="ticker" aria-label="Works with">
   <div class="ticker-track" id="tickerTrack"></div>
 </div>
+
+<!-- ============================== WHAT'S NEW ============================== -->
+<section class="section" id="new">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow"><span class="dot"></span>New in <span class="js-version">1.2.0</span></span>
+      <h2 class="h2">Way more than<br /><span class="grad-text shimmer">a music notch.</span></h2>
+      <p class="lead">Lyrics, live activities, widgets and gestures — try most of them in the demo at the top: hover the notch, then click the icons along its top edge.</p>
+    </div>
+    <div class="new-grid">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff5fa2;--d:0.00s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
+        <h3>Synced lyrics</h3>
+        <p>Lines light up in time with the song — on their own page, or right in the closed notch. Free, via LRCLIB.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#30d158;--d:0.06s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+        <h3>Live activities</h3>
+        <p>Charger plugged in, headphones connected (with battery), a meeting about to start, a timer done — the notch tells you.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff9f0a;--d:0.12s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg></div>
+        <h3>Split island</h3>
+        <p>A running timer or stopwatch rides along in a little bubble next to the notch, just like on a phone.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#4fc3ff;--d:0.18s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M8 4v5M13 4v5"/></svg></div>
+        <h3>Eight pages</h3>
+        <p>Music · Lyrics · Calendar · Weather · System · Timer · Shelf · Notes. Swipe sideways to flip through them.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#7b6cff;--d:0.00s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
+        <h3>File shelf</h3>
+        <p>Drag files onto the notch to park them, then drag them out wherever you need them later.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff453a;--d:0.06s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3"/><circle cx="17" cy="12" r="3"/></svg></div>
+        <h3>Privacy dots</h3>
+        <p>A green or orange dot whenever any app is using your camera or microphone. Hover to see which one.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#5e5ce6;--d:0.12s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <h3>Gestures</h3>
+        <p>Swipe sideways to skip, double-click to play / pause, middle-click to mute, Win + Alt + N to open.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#64d2ff;--d:0.18s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="9" height="7" rx="1.5"/><rect x="13" y="4" width="9" height="7" rx="1.5"/><path d="M6 15h12M9 19h6"/></svg></div>
+        <h3>Every monitor & app rules</h3>
+        <p>A notch on each screen if you like — and hide it, or keep it quiet, while chosen apps or fullscreen games are in front.</p>
+      </article>
+    </div>
+  </div>
+</section>
 
 <!-- ============================== FEATURES ============================== -->
 <section class="section" id="features">
@@ -968,7 +1130,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
       <div class="stat"><div class="val"><span class="count" data-to="1">0</span></div><div class="lbl">file to download</div></div>
       <div class="stat"><div class="val"><span class="count" data-to="0">0</span></div><div class="lbl">installers, accounts or ads</div></div>
       <div class="stat"><div class="val">&lt;<span class="count" data-to="1">0</span>%</div><div class="lbl">CPU while idle</div></div>
-      <div class="stat"><div class="val"><span class="count" data-to="4">0</span></div><div class="lbl">one-click theme presets</div></div>
+      <div class="stat"><div class="val"><span class="count" data-to="8">0</span></div><div class="lbl">pages in the open notch</div></div>
     </div>
   </div>
 </section>
@@ -985,7 +1147,8 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <div class="step" data-step="idle"><span class="num">01 — IDLE</span><h3>Quiet. Just the time.</h3><p>When nothing's playing, Crest shrinks to a tiny pill with the clock. No dancing bars, no distraction.</p></div>
         <div class="step" data-step="collapsed"><span class="num">02 — PLAYING</span><h3>Music starts. It wakes up.</h3><p>The notch widens smoothly and the spectrum slides in next to the time. Pause, and after a moment it settles back down.</p></div>
         <div class="step" data-step="peek"><span class="num">03 — PEEK</span><h3>A new song says hello.</h3><p>The notch pops open for a few seconds with the cover art and a scrolling title, then tucks itself away.</p></div>
-        <div class="step" data-step="expanded"><span class="num">04 — EXPANDED</span><h3>Hover for the full player.</h3><p>Date, time, cover, progress you can click to seek, previous / play / next, volume and settings.</p></div>
+        <div class="step" data-step="activity"><span class="num">04 — LIVE ACTIVITY</span><h3>It tells you what's up.</h3><p>Plug in the charger, connect your headphones, a meeting is about to start, a timer ends — the notch pops open with just what you need to know.</p></div>
+        <div class="step" data-step="expanded"><span class="num">05 — EXPANDED</span><h3>Hover for everything.</h3><p>The full player, plus pages for lyrics, calendar, weather, system stats, a timer, a file shelf and notes — swipe sideways to flip through.</p></div>
       </div>
       <div class="story-sticky">
         <div class="story-screen">
@@ -1021,6 +1184,8 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
           <button class="aw-nav" data-page="Size &amp; Shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg>Size &amp; Shape</button>
           <button class="aw-nav" data-page="Spectrum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 10v4M10 6v12M14 9v6M18 7v10"/></svg>Spectrum</button>
           <button class="aw-nav" data-page="Media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Media</button>
+          <button class="aw-nav" data-page="Activities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Activities</button>
+          <button class="aw-nav" data-page="Widgets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Widgets</button>
           <button class="aw-nav" data-page="Behavior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Behavior</button>
           <div class="aw-theme" role="group" aria-label="Settings theme">
             <button class="on" data-theme="dark">Dark</button><button data-theme="light">Light</button><button data-theme="auto">Auto</button>
@@ -1096,6 +1261,8 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
     </div>
     <div class="faq">
       <details class="reveal" data-cursor="hover"><summary>Which music apps does it work with?<i></i></summary><div class="ans"><div><p>Anything that shows up in the Windows media flyout (the box that appears when you press a volume key): Spotify, YouTube and other sites in Edge, Chrome or Firefox, Windows Media Player, and most modern players.</p></div></div></details>
+      <details class="reveal" data-cursor="hover"><summary>Where do the lyrics and weather come from?<i></i></summary><div class="ans"><div><p>Lyrics come from LRCLIB and weather from Open-Meteo — both free and open, no account or API key. Crest only sends the song's title and artist, or the city you typed.</p></div></div></details>
+      <details class="reveal" data-cursor="hover"><summary>How does the calendar work? Is my data safe?<i></i></summary><div class="ans"><div><p>Paste your calendar's private iCal link (Google Calendar, Outlook and iCloud all have one) in Settings → Activities. Crest downloads it straight from your calendar provider and keeps it on your PC — nothing goes anywhere else. Clipboard history is off by default and never saved to disk.</p></div></div></details>
       <details class="reveal" data-cursor="hover"><summary>Will it slow down my PC or my games?<i></i></summary><div class="ans"><div><p>No. When nothing is happening, every timer and animation stops, so it uses practically no CPU. The optional "real spectrum" uses a little more while music plays — it's off by default.</p></div></div></details>
       <details class="reveal" data-cursor="hover"><summary>Does it stay visible in fullscreen?<i></i></summary><div class="ans"><div><p>Yes, above fullscreen videos, movies and borderless/windowed-fullscreen games. Games in true <em>exclusive</em> fullscreen own the whole display, so no app can draw over them — switch those to borderless.</p></div></div></details>
       <details class="reveal" data-cursor="hover"><summary>How do I open settings or quit?<i></i></summary><div class="ans"><div><p>Right-click the notch, click the gear in the expanded player, or use the Crest icon in the system tray. The tray menu also has "Start with Windows" and "Exit".</p></div></div></details>
@@ -1127,7 +1294,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
    CONFIG — change these to point at your own GitHub release
    ===================================================================== */
 const CONFIG = {
-  version: "1.1.0",
+  version: "1.2.0",
   repoUrl: "https://github.com/RiRoboYT/Crest",
   // Upload Crest.exe as an asset of a GitHub Release and this link always serves the newest one.
   downloadUrl: "https://github.com/RiRoboYT/Crest/releases/latest/download/Crest.exe",
@@ -1321,7 +1488,28 @@ const CONFIG = {
     next() { this.index = (this.index + 1) % SONGS.length; this.pos = 0; this.emit("track"); },
     prev() { if (this.pos > 4) { this.pos = 0; this.emit("tick"); return; } this.index = (this.index - 1 + SONGS.length) % SONGS.length; this.pos = 0; this.emit("track"); },
     setPreset(p) { this.preset = p; this.emit("preset"); },
+    timer: { left: 0, running: false, total: 60 },
+    call: false,
+    startTimer(sec) { this.timer = { left: sec, running: true, total: sec }; this.emit("timer"); },
+    toggleTimer() { if (this.timer.left <= 0) this.timer.left = this.timer.total; this.timer.running = !this.timer.running; this.emit("timer"); },
+    resetTimer() { this.timer = { left: 0, running: false, total: this.timer.total }; this.emit("timer"); },
   };
+  setInterval(() => {
+    const t = player.timer;
+    if (!t.running) return;
+    t.left -= 1;
+    if (t.left <= 0) { t.left = 0; t.running = false; player.emit("timer"); player.emit("timerdone"); }
+    else player.emit("timer");
+  }, 1000);
+
+  // Made-up lyrics for the made-up demo songs: [second, line]
+  const LYRICS = [
+    [[0, "\u266A"], [8, "City lights are melting into blue"], [16, "Every wave is pulling me to you"], [24, "Radio hums the only song we knew"], [32, "Neon tides, carry me through"], [40, "We drive until the morning breaks"], [48, "Counting every turn the ocean takes"], [56, "Hold the static, hold the quiet ache"], [64, "Neon tides, for both our sakes"]],
+    [[0, "\u266A"], [7, "Clocks made of glass, hours made of light"], [15, "You read the time in the window at night"], [23, "Nothing breaks if we hold it right"], [31, "Glass hours, burning bright"], [39, "Soft static on the stereo"], [47, "Whispering the things we already know"]],
+    [[0, "\u266A"], [9, "Folded paper, thrown into the sky"], [18, "Little satellites learning how to fly"], [27, "Signals blinking as the night goes by"], [36, "Paper satellites, you and I"], [45, "Drive until the city fades away"], [54, "Echoes in the harbor where we stay"]],
+    [[0, "\u266A"], [6, "Sun goes down on Afterglow Avenue"], [14, "Golden hour painting me and you"], [22, "Every streetlight humming something new"], [30, "Stay a while, the night is overdue"], [38, "Hold the moment, let it carry through"]],
+  ];
+  const lyricIndex = (lines, sec) => { let i = -1; lines.forEach((l, k) => { if (l[0] <= sec) i = k; }); return i; };
   setInterval(() => {
     if (!player.playing) return;
     player.pos += 1;
@@ -1357,8 +1545,23 @@ const CONFIG = {
     mute: '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9z"/><path d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
     gear: '<svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm9 4.6v-2.2l-2.4-.5a7 7 0 0 0-.7-1.7l1.4-2-1.6-1.6-2 1.4a7 7 0 0 0-1.7-.7L13.1 3h-2.2l-.5 2.4a7 7 0 0 0-1.7.7l-2-1.4-1.6 1.6 1.4 2a7 7 0 0 0-.7 1.7L3 10.9v2.2l2.4.5c.2.6.4 1.2.7 1.7l-1.4 2 1.6 1.6 2-1.4c.5.3 1.1.5 1.7.7l.5 2.4h2.2l.5-2.4a7 7 0 0 0 1.7-.7l2 1.4 1.6-1.6-1.4-2c.3-.5.5-1.1.7-1.7z"/></svg>',
   };
+  Object.assign(ICONS, {
+    bolt: '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    buds: '<svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></svg>',
+    timer: '<svg viewBox="0 0 24 24"><path d="M9 1h6v2H9zM12 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm1 9.4 2.8 2.8-1.4 1.4L11 14.2V8h2z"/></svg>',
+    volHud: '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9z"/><path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  });
+  const TAB_ICONS = {
+    music: '<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
+    lyrics: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 11h12M4 16h8"/></svg>',
+    weather: '<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="4"/><path d="M9 1v2M2 9h2M3.9 3.9l1.4 1.4M17 12a4 4 0 0 0-7.6 1.7A3.5 3.5 0 0 0 10 21h7a4.5 4.5 0 0 0 0-9z"/></svg>',
+    system: '<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg>',
+    timer: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
+  };
+  const PAGES = ["music", "lyrics", "weather", "system", "timer"];
   const BARS = n => `<span class="bars">${"<i></i>".repeat(n)}</span>`;
   const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const fmtTimer = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   class Notch {
     constructor(anchor, { interactive = false, fixedState = null } = {}) {
@@ -1370,31 +1573,60 @@ const CONFIG = {
       this.el.className = "notch";
       this.el.innerHTML = `
         <div class="notch-clip">
-          <div class="n-view n-collapsed"><span class="n-time"></span><span class="n-bars-wrap">${BARS(6)}</span></div>
+          <div class="n-view n-collapsed"><span class="n-dots"><i class="cam"></i><i class="mic"></i></span><span class="n-time"></span><span class="n-bars-wrap">${BARS(6)}</span></div>
+          <div class="n-view n-activity">
+            <span class="n-act-icon"></span>
+            <span class="n-act-meta"><div class="n-act-title"></div><div class="n-act-sub"></div><div class="n-act-level"><i></i></div></span>
+            <span class="n-act-value"></span>
+          </div>
           <div class="n-view n-peek" data-open>
             <span class="n-art"></span>
             <span class="n-meta"><div class="n-title"><span></span></div><div class="n-artist"></div></span>
             ${BARS(5)}
           </div>
           <div class="n-view n-expanded">
-            <div class="n-head"><span class="n-date"></span><b class="n-time2"></b></div>
-            <div class="n-track" data-open>
-              <span class="n-art"></span>
-              <span class="n-meta"><div class="n-title"><span></span></div><div class="n-artist"></div></span>
-              ${BARS(6)}
-            </div>
-            <div class="n-progress"><span class="n-pos">0:00</span><span class="n-line"><i></i></span><span class="n-dur">0:00</span></div>
-            <div class="n-controls">
-              <span class="n-vol"><button class="n-btn n-mute" aria-label="Mute">${ICONS.vol}</button><input class="n-range" type="range" min="0" max="100" aria-label="Volume" /></span>
-              <span class="n-mid">
-                <button class="n-btn n-prev" aria-label="Previous">${ICONS.prev}</button>
-                <button class="n-btn big n-play" aria-label="Play or pause">${ICONS.pause}</button>
-                <button class="n-btn n-next" aria-label="Next">${ICONS.next}</button>
-              </span>
-              <button class="n-btn n-gear" aria-label="Settings">${ICONS.gear}</button>
+            <div class="n-head"><span class="n-date"></span><span class="n-tabs">${PAGES.map(p => `<button class="n-tab${p === "music" ? " on" : ""}" data-tab="${p}" aria-label="${p}">${TAB_ICONS[p]}</button>`).join("")}</span><b class="n-time2"></b></div>
+            <div class="n-pages">
+              <div class="n-page on" data-page="music">
+                <div class="n-track" data-open>
+                  <span class="n-art"></span>
+                  <span class="n-meta"><div class="n-title"><span></span></div><div class="n-artist"></div></span>
+                  ${BARS(6)}
+                </div>
+                <div class="n-progress"><span class="n-pos">0:00</span><span class="n-line"><i></i></span><span class="n-dur">0:00</span></div>
+                <div class="n-controls">
+                  <span class="n-vol"><button class="n-btn n-mute" aria-label="Mute">${ICONS.vol}</button><input class="n-range" type="range" min="0" max="100" aria-label="Volume" /></span>
+                  <span class="n-mid">
+                    <button class="n-btn n-prev" aria-label="Previous">${ICONS.prev}</button>
+                    <button class="n-btn big n-play" aria-label="Play or pause">${ICONS.pause}</button>
+                    <button class="n-btn n-next" aria-label="Next">${ICONS.next}</button>
+                  </span>
+                  <button class="n-btn n-gear" aria-label="Settings">${ICONS.gear}</button>
+                </div>
+              </div>
+              <div class="n-page" data-page="lyrics"><div class="n-lyrics"><div class="l-prev"></div><div class="l-cur"></div><div class="l-next"></div></div></div>
+              <div class="n-page" data-page="weather"><div class="n-weather">
+                <span class="w-icon">\u26C5</span>
+                <span><div class="w-temp">22°</div><div class="w-desc">Partly cloudy · H 24° L 15°<br />Lisbon</div></span>
+                <span class="w-hours"><span>15<i>\u2600\uFE0F</i><b>23°</b></span><span>16<i>\u26C5</i><b>22°</b></span><span>17<i>\u2601\uFE0F</i><b>20°</b></span><span>18<i>\uD83C\uDF19</i><b>18°</b></span></span>
+              </div></div>
+              <div class="n-page" data-page="system"><div class="n-system">
+                <div class="n-meter" data-m="cpu"><div>CPU<b>12%</b></div><div class="bar"><i></i></div></div>
+                <div class="n-meter" data-m="ram"><div>Memory<b>9.8 / 32 GB</b></div><div class="bar"><i></i></div></div>
+                <div class="n-meter" data-m="gpu"><div>GPU<b>4%</b></div><div class="bar"><i></i></div></div>
+                <div class="n-meter" data-m="disk"><div>Disk<b>412 GB free</b></div><div class="bar"><i style="--m:.58"></i></div></div>
+              </div></div>
+              <div class="n-page" data-page="timer"><div class="n-timer">
+                <span><div class="t-mode">Timer</div><div class="t-big">01:00</div></span>
+                <span class="t-chips">
+                  <button class="n-chip" data-min="1">1 min</button><button class="n-chip" data-min="5">5 min</button><button class="n-chip" data-min="25">25 min</button>
+                  <button class="n-chip t-toggle">Start</button><button class="n-chip t-reset">Reset</button>
+                </span>
+              </div></div>
             </div>
           </div>
-        </div>`;
+        </div>
+        <div class="n-bubble">${ICONS.timer}<span class="n-bubble-t">0:59</span></div>`;
       anchor.appendChild(this.el);
 
       // bars
@@ -1446,12 +1678,81 @@ const CONFIG = {
         player.pos = Math.round(((e.clientX - r.left) / r.width) * player.song.dur);
         player.emit("tick");
       });
+      $$(".n-tab", el).forEach(t => t.addEventListener("click", () => this.selectPage(t.dataset.tab)));
+      $$(".n-chip[data-min]", el).forEach(c => c.addEventListener("click", () => player.startTimer(+c.dataset.min * 60)));
+      $(".t-toggle", el).addEventListener("click", () => player.toggleTimer());
+      $(".t-reset", el).addEventListener("click", () => player.resetTimer());
+      let hAcc = 0, lastSkip = 0;
       el.addEventListener("wheel", e => {
         e.preventDefault();
+        const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
+        if (horizontal) {
+          // sideways swipe: switch pages when open, skip songs when closed
+          hAcc += e.shiftKey ? e.deltaY : e.deltaX;
+          if (Math.abs(hAcc) < 60) return;
+          const dir = Math.sign(hAcc); hAcc = 0;
+          if (this.state === "expanded") return this.stepPage(dir);
+          if (Date.now() - lastSkip < 600) return;
+          lastSkip = Date.now();
+          return dir > 0 ? player.next() : player.prev();
+        }
         player.volume = Math.max(0, Math.min(100, player.volume + (e.deltaY < 0 ? 4 : -4)));
         player.muted = false; player.emit("volume");
-        if (this.state !== "expanded") toast(`Volume ${player.volume}%`);
+        if (this.state !== "expanded")
+          this.showActivity({ icon: ICONS.volHud, color: "#7b6cff", title: "Volume", value: player.volume + "%", level: player.volume / 100, ms: 1400 });
       }, { passive: false });
+      el.addEventListener("dblclick", e => { if (!e.target.closest("button, input")) player.toggle(); });
+      el.addEventListener("auxclick", e => { if (e.button === 1) { e.preventDefault(); player.muted = !player.muted; player.emit("volume"); } });
+    }
+
+    selectPage(name, dir) {
+      const pages = $$(".n-page", this.el);
+      const from = PAGES.indexOf(this.page || "music"), to = PAGES.indexOf(name);
+      this.page = name;
+      pages.forEach(p => {
+        p.style.setProperty("--from", (to >= from ? 18 : -18) + "px");
+        p.classList.toggle("on", p.dataset.page === name);
+      });
+      $$(".n-tab", this.el).forEach(t => t.classList.toggle("on", t.dataset.tab === name));
+      this.renderLyrics(true);
+    }
+
+    stepPage(dir) {
+      const i = PAGES.indexOf(this.page || "music");
+      const next = PAGES[Math.max(0, Math.min(PAGES.length - 1, i + dir))];
+      if (next !== this.page) this.selectPage(next, dir);
+    }
+
+    setActivity(a) {
+      const el = this.el, act = $(".n-activity", el);
+      $(".n-act-icon", el).innerHTML = a.icon;
+      $(".n-act-icon", el).style.setProperty("--act", a.color);
+      $(".n-act-title", el).textContent = a.title;
+      $(".n-act-sub", el).textContent = a.sub || "";
+      $(".n-act-value", el).textContent = a.value || "";
+      act.classList.toggle("has-level", typeof a.level === "number");
+      $(".n-act-level i", el).style.setProperty("--lv", a.level ?? 0);
+    }
+
+    showActivity(a) {
+      if (this.state === "expanded") return;
+      this.setActivity(a);
+      this.setState("activity");
+      clearTimeout(this.actT);
+      this.actT = setTimeout(() => { if (this.state === "activity" && !this.el.matches(":hover")) this.setState(this.restState()); }, a.ms || 2500);
+    }
+
+    renderLyrics(force) {
+      const lines = LYRICS[player.index];
+      const i = lyricIndex(lines, player.pos);
+      if (i === this.lyricI && !force) return;
+      this.lyricI = i;
+      const line = k => (k >= 0 && k < lines.length ? lines[k][1] : "");
+      const cur = $(".l-cur", this.el);
+      $(".l-prev", this.el).textContent = line(i - 1);
+      $(".l-next", this.el).textContent = line(i + 1);
+      cur.classList.add("swap");
+      requestAnimationFrame(() => { cur.textContent = line(i) || "\u266A"; cur.classList.remove("swap"); });
     }
 
     restState() {
@@ -1463,11 +1764,21 @@ const CONFIG = {
       this.state = s;
       this.el.dataset.state = s;
       this.el.classList.toggle("playing", this.showPlaying);
+      this.el.classList.toggle("glow", this.showPlaying && player.playing && !this.forced);
+      this.el.classList.toggle("dots", player.call);
+      this.el.style.setProperty("--glow", player.song.accent);
       $$(".n-title", this.el).forEach(t => this.marquee(t));
     }
 
     onPlayer(type) {
       if (type === "preset") return this.applyPreset();
+      if (type === "timer") return this.renderTimer();
+      if (type === "timerdone") {
+        this.renderTimer();
+        if (this.interactive) this.showActivity({ icon: ICONS.timer, color: "#ff9f0a", title: "Timer done", sub: "1:00 timer", ms: 4000 });
+        return;
+      }
+      if (type === "call") return this.setState(this.state);
       if (type === "track") {
         this.render(true);
         if (this.interactive && player.playing && this.state !== "expanded") {
@@ -1517,6 +1828,18 @@ const CONFIG = {
       $(".n-range", el).value = vol;
       $(".n-range", el).style.setProperty("--v", vol + "%");
       $(".n-mute", el).innerHTML = vol === 0 ? ICONS.mute : ICONS.vol;
+      if (this.page === "lyrics") this.renderLyrics(full);
+      this.el.classList.toggle("glow", this.showPlaying && player.playing && !this.forced);
+      this.el.style.setProperty("--glow", s.accent);
+    }
+
+    renderTimer() {
+      const t = player.timer, el = this.el;
+      const txt = `${String(Math.floor(t.left / 60)).padStart(2, "0")}:${String(t.left % 60).padStart(2, "0")}`;
+      $(".t-big", el).textContent = t.left > 0 ? txt : fmtTimer(t.total);
+      $(".n-bubble-t", el).textContent = txt;
+      $(".t-toggle", el).textContent = t.running ? "Pause" : "Start";
+      el.classList.toggle("timer", t.left > 0 && !this.forced);
     }
 
     marquee(t) {
@@ -1583,6 +1906,27 @@ const CONFIG = {
     if (!player.playing) { player.playing = true; player.emit("play"); }
     player.next();
   });
+  $("#btnCharge").addEventListener("click", () =>
+    hero.showActivity({ icon: ICONS.bolt, color: "#30d158", title: "Charging", value: "64%", level: 0.64, ms: 2600 }));
+  $("#btnBuds").addEventListener("click", () =>
+    hero.showActivity({ icon: ICONS.buds, color: "#0a84ff", title: "Studio Buds", sub: "Connected", value: "82%", ms: 3000 }));
+  $("#btnTimer").addEventListener("click", () => player.startTimer(60));
+  $("#btnCall").addEventListener("click", () => {
+    player.call = !player.call;
+    $("#btnCall").classList.toggle("on", player.call);
+    player.emit("call");
+  });
+  // fake but lively system meters
+  setInterval(() => {
+    const jitter = (v, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random() - 0.5) * 14));
+    window.__sys = window.__sys || { cpu: 14, ram: 31, gpu: 6 };
+    const s = window.__sys;
+    s.cpu = jitter(s.cpu, 3, 70); s.ram = jitter(s.ram, 28, 40) ; s.gpu = jitter(s.gpu, 1, 45);
+    $$(".n-meter[data-m=cpu]").forEach(m => { m.querySelector("b").textContent = Math.round(s.cpu) + "%"; m.querySelector("i").style.setProperty("--m", s.cpu / 100); });
+    $$(".n-meter[data-m=ram]").forEach(m => { m.querySelector("b").textContent = (s.ram * 0.32).toFixed(1) + " / 32 GB"; m.querySelector("i").style.setProperty("--m", s.ram / 100); });
+    $$(".n-meter[data-m=gpu]").forEach(m => { m.querySelector("b").textContent = Math.round(s.gpu) + "%"; m.querySelector("i").style.setProperty("--m", s.gpu / 100); });
+  }, 1500);
+
   function setPreset(p) {
     player.setPreset(p);
     $$(".swatch").forEach(s => s.classList.toggle("on", s.dataset.preset === p));
@@ -1596,7 +1940,8 @@ const CONFIG = {
      =================================================================== */
   (function storyScroll() {
     const steps = $$(".step"), label = $("#storyLabel");
-    const names = { idle: "Idle", collapsed: "Playing", peek: "Peek", expanded: "Expanded" };
+    const names = { idle: "Idle", collapsed: "Playing", peek: "Peek", activity: "Live activity", expanded: "Expanded" };
+    story.setActivity({ icon: ICONS.bolt, color: "#30d158", title: "Charging", value: "64%", level: 0.64 });
     const io = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (!e.isIntersecting) return;
