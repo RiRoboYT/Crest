@@ -10,6 +10,23 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 * **Tray icon:** left-click opens Settings. Right-click gives Settings, Show notch, Start with Windows and Exit.
 * **Topmost:** the notch stays on top, including over fullscreen video and borderless-fullscreen games.
 
+## What's new in 1.2
+
+| Area | Change |
+|---|---|
+| Lyrics | Synced lyrics (LRCLIB, free) on a Lyrics page, optionally as a line in the closed notch. |
+| Activities | Pop-ups when the charger is plugged in or out, Bluetooth headphones connect (with battery), a meeting is about to start, or a timer ends. |
+| Split island | A running timer or stopwatch shows as a small bubble next to the notch. |
+| Volume / brightness | A level indicator in the notch whenever volume (or laptop brightness) changes. |
+| Pages | The open notch has pages: Music · Lyrics · Calendar · Weather · System · Timer · Shelf · Notes. Swipe sideways or click the icons. |
+| File shelf | Drag files onto the notch to park them; drag them out again later. |
+| Privacy dots | Green / orange dot while any app uses the camera / microphone. |
+| Gestures | Swipe sideways to skip songs, double-click to play/pause, middle-click to mute, Win + Alt + N to open. |
+| Notes & clipboard | A quick note, and (optional) your last few copied texts. |
+| Look | Album-colored glow and springy animations. |
+| Monitors | A notch on every monitor, if you like. |
+| Per-app rules | Hide Crest, or keep it quiet, while specific apps are in front. Also quiet during fullscreen. |
+
 ## What's new in 1.1
 
 | Area | Change |
@@ -43,7 +60,10 @@ Crest/
 ├── app.manifest                         ← per-monitor DPI
 ├── AssemblyInfo.cs
 ├── App.xaml / App.xaml.cs               ← startup, single instance, tray, wiring
-├── MainWindow.xaml / .cs                ← the notch (collapsed / peek / expanded)
+├── MainWindow.xaml / .cs                ← the notch: window, states, media, volume
+├── MainWindow.Pages.cs                  ← expanded pages (lyrics, calendar, weather, system, timer, shelf, notes)
+├── MainWindow.Activities.cs             ← pop-ups, volume/brightness indicator, timer bubble, privacy dots, glow
+├── MainWindow.Input.cs                  ← gestures, hotkey, drag & drop, typing
 ├── SettingsWindow.xaml / .cs            ← settings UI with live preview
 ├── Themes/SettingsStyles.xaml           ← dark/light control styles for the settings window
 ├── Controls/MarqueeText.cs              ← scrolling title
@@ -56,6 +76,16 @@ Crest/
 │   ├── AudioSpectrumService.cs          ← optional real spectrum (loopback + FFT)
 │   ├── SpectrumAnimator.cs              ← fake / real bars
 │   ├── AppActivator.cs                  ← "click the song to open the app"
+│   ├── LyricsService.cs                 ← synced lyrics from LRCLIB
+│   ├── CalendarService.cs               ← iCal (.ics) calendar + reminders
+│   ├── WeatherService.cs                ← Open-Meteo weather
+│   ├── SystemStatsService.cs            ← CPU / RAM / GPU / disk
+│   ├── TimerService.cs                  ← timer + stopwatch
+│   ├── ShelfService.cs                  ← file shelf + notes
+│   ├── PowerService.cs, BluetoothService.cs, BrightnessService.cs, PrivacyService.cs
+│   ├── ForegroundWatcher.cs             ← stay-on-top, fullscreen detection, per-app rules
+│   ├── HotkeyService.cs, ClipboardService.cs, MessageWindow.cs
+│   ├── CrestServices.cs                 ← creates all shared services
 │   ├── SettingsManager.cs               ← JSON load/save (debounced)
 │   ├── StartupManager.cs                ← "Start with Windows" (HKCU Run key)
 │   └── TrayIconService.cs               ← NotifyIcon + menu
@@ -69,7 +99,7 @@ Crest/
 
 ## Build
 
-You need the .NET 8 SDK on Windows. NuGet restores **NAudio.Wasapi** automatically on the first build.
+You need the .NET 8 SDK on Windows. NuGet restores **NAudio.Wasapi**, **System.Management** and **System.Diagnostics.PerformanceCounter** automatically on the first build (internet needed once).
 
 Run it:
 
@@ -104,4 +134,8 @@ Settings are saved to `settings.json` next to `Crest.exe`. If that folder isn't 
 * **Glass preset:** it's translucent, not blurred. Real background blur isn't possible on a click-through overlay window like this.
 * **Click to open:** for browsers, the browser window comes to the front, but Windows doesn't say which tab is playing.
 * **Real spectrum:** it listens to what Windows is playing (loopback) without recording or saving anything. It only runs while music plays, and uses a little more CPU than the fake bars.
+* **Calendar:** Windows doesn't let normal desktop apps read its built-in calendar, so Crest uses your calendar's private iCal link instead. Repeating events (daily / weekly / monthly) are supported; all-day events are skipped.
+* **Volume indicator:** Windows' own volume pop-up can't be hidden from outside, so it may still appear when you use the volume keys. Scrolling on the notch changes the volume directly and only shows Crest's indicator.
+* **System page:** shows CPU, memory, GPU usage and disk. Temperatures need vendor tools and admin rights, so they aren't included.
+* **Album glow:** the glow is part of the overlay, so a thin area just below the notch catches clicks while music plays. Turn it off in Settings → Appearance if that gets in the way.
 * **Memory:** WPF's baseline working set is usually about 40–60 MB.

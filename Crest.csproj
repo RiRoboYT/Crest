@@ -14,7 +14,7 @@
     <AssemblyName>Crest</AssemblyName>
     <RootNamespace>Crest</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Product>Crest</Product>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
@@ -27,6 +27,10 @@
   <ItemGroup>
     <!-- Core Audio (volume, default-device changes) + WASAPI loopback for the optional real spectrum. -->
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <!-- Brightness change events (WMI) -->
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <!-- GPU usage for the System page -->
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
   </ItemGroup>
 
   <!-- `dotnet publish -c Release` produces a single self-contained Crest.exe -->

@@ -139,6 +139,18 @@
                                 <TextBlock Text="Media" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
+                        <ListBoxItem Tag="Activities">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" Width="28" />
+                                <TextBlock Text="Activities" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="Widgets">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xECA5;" Width="28" />
+                                <TextBlock Text="Widgets" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ListBoxItem>
                         <ListBoxItem Tag="Behavior">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" Width="28" />
@@ -481,6 +493,26 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Effects" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AlbumGlow}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Album glow" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="A soft glow in the cover's color under the notch while music plays." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding BouncyAnimations}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Bouncy animations" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="A little spring when the notch opens, like on a phone." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <!-- ======================= SIZE & SHAPE ======================= -->
@@ -809,6 +841,190 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Lyrics" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding LyricsEnabled}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Show lyrics" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Synced lyrics from LRCLIB (free). Shown on the Lyrics page of the open notch." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding LyricsInCollapsed}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Lyric line in the closed notch" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="While music plays, the current line replaces the time (when synced lyrics exist)." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- ======================= ACTIVITIES ======================= -->
+                            <StackPanel x:Name="PageActivities" Visibility="Collapsed">
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Pop-ups" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ChargingActivity}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Charger plugged in / out" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Shows the battery level (laptops)." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding HeadphonesActivity}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Bluetooth headphones connected" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Shows the device name and battery when Windows knows it." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding VolumeHud}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Volume indicator in the notch" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="When the volume changes. Scrolling on the notch then changes volume without the Windows pop-up." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding BrightnessHud}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Brightness indicator in the notch" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Built-in laptop screens only." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding TimerSound}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Sound when a timer ends" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Calendar" Margin="0,0,0,4" />
+                                        <TextBlock Style="{StaticResource RowTitle}" Text="Calendar link (iCal / .ics)" Margin="0,10,0,0" />
+                                        <TextBlock Style="{StaticResource RowDesc}" Text="Google Calendar: Settings → your calendar → Secret address in iCal format. Outlook: Settings → Calendar → Shared calendars → Publish → ICS. Kept only on this PC." />
+                                        <TextBox Margin="0,8,0,6" Text="{Binding CalendarUrl, UpdateSourceTrigger=LostFocus}" />
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CalendarActivity}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Remind me before meetings" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="The notch pops up before an event starts and again when it begins." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <StackPanel Style="{StaticResource SliderRow}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource ValuePill}">
+                                                    <TextBlock Style="{StaticResource ValueText}"><Run Text="{Binding CalendarReminderMinutes, Mode=OneWay}" /><Run Text=" min" /></TextBlock>
+                                                </Border>
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Remind me this early" />
+                                            </DockPanel>
+                                            <Slider Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
+                                                    Value="{Binding CalendarReminderMinutes}" IsEnabled="{Binding CalendarActivity}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Privacy &amp; quiet" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PrivacyDots}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Camera / microphone dots" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="A green (camera) or orange (mic) dot while any app uses them. Hover the dots in the open notch to see which app." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding QuietInFullscreen}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="No pop-ups in fullscreen" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="No peeks or pop-ups while a fullscreen game or video is on that monitor." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- ======================= WIDGETS ======================= -->
+                            <StackPanel x:Name="PageWidgets" Visibility="Collapsed">
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Pages in the open notch" Margin="0,0,0,4" />
+                                        <TextBlock Style="{StaticResource Caption}" Text="Swipe sideways (or Shift + scroll) on the open notch to move between pages, or click the icons at the top." Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageLyrics}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Lyrics" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageCalendar}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Calendar" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageWeather}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Weather" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageSystem}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="System (CPU, memory, GPU, disk)" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageTimer}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Timer &amp; stopwatch" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageShelf}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="File shelf" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Drag files onto the notch to park them, drag them out later." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageNotes}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Notes" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Weather" Margin="0,0,0,4" />
+                                        <TextBlock Style="{StaticResource RowTitle}" Text="City" Margin="0,10,0,0" />
+                                        <TextBlock Style="{StaticResource RowDesc}" Text="Weather from Open-Meteo (free, no account). Leave empty to hide the weather." />
+                                        <TextBox Margin="0,8,0,6" Text="{Binding WeatherCity, UpdateSourceTrigger=LostFocus}" />
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding WeatherFahrenheit}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Fahrenheit (°F)" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Clipboard" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ClipboardHistory}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Recent copies on the Notes page" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Remembers the last few texts you copied – in memory only, cleared when Crest closes. Off by default because copied passwords would show up too." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <!-- ======================= BEHAVIOR ======================= -->
@@ -884,6 +1100,68 @@
                                             </DockPanel>
                                             <Slider Minimum="0" Maximum="600" TickFrequency="10" IsSnapToTickEnabled="True" Margin="0,6,0,0" Value="{Binding AnimationDurationMs}" />
                                         </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Gestures" Margin="0,0,0,4" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ScrollSkipsTracks}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Swipe sideways to skip songs" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Touchpad swipe, tilt wheel or Shift + scroll on the closed notch. On the open notch it switches pages." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding DoubleClickPlayPause}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Double-click to play / pause" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding MiddleClickMute}" />
+                                            <TextBlock Style="{StaticResource RowTitle}" Text="Middle-click to mute" />
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding HotkeyEnabled}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Win + Alt + N opens the notch" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Press again to close it." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource H2}" Text="Per-app rules" Margin="0,0,0,4" />
+                                        <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,10"
+                                                   Text="While one of these apps is in front, Crest hides completely or just stays quiet (no peeks or pop-ups)." />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid>
+                                                <TextBox x:Name="RuleAppBox" />
+                                                <TextBlock x:Name="RuleAppPlaceholder" Text="App name, e.g. valorant or obs64" IsHitTestVisible="False"
+                                                           Foreground="{DynamicResource S.Faint}" FontFamily="Cascadia Mono, Consolas" FontSize="12.5"
+                                                           VerticalAlignment="Center" Margin="12,0,0,0" />
+                                            </Grid>
+                                            <ComboBox x:Name="RuleActionCombo" Grid.Column="1" Width="150" MinWidth="150" Margin="8,0,0,0" SelectedIndex="0">
+                                                <ComboBoxItem Content="No pop-ups" />
+                                                <ComboBoxItem Content="Hide the notch" />
+                                            </ComboBox>
+                                            <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="Add" Margin="8,0,0,0" Padding="18,7"
+                                                    Click="AddRule_Click" />
+                                        </Grid>
+                                        <DockPanel Margin="0,8,0,4">
+                                            <TextBlock Style="{StaticResource Caption}" Text="Or pick a running app:" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            <ComboBox x:Name="RunningAppsCombo" MinWidth="220" Width="260" HorizontalAlignment="Left"
+                                                      DropDownOpened="RunningAppsCombo_DropDownOpened" SelectionChanged="RunningAppsCombo_SelectionChanged" />
+                                        </DockPanel>
+                                        <StackPanel x:Name="RulesList" Margin="0,6,0,0" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

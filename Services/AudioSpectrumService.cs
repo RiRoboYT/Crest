@@ -40,9 +40,25 @@ namespace Crest.Services
                 _window[i] = 0.5 * (1 - Math.Cos(2 * Math.PI * i / (FftSize - 1)));   // Hann
         }
 
+        private int _users;
+
         public bool IsRunning => _capture != null;
 
+        /// <summary>Reference-counted: several notch windows (one per monitor) can share one capture.</summary>
         public void Start()
+        {
+            if (_users++ > 0) return;
+            StartCapture();
+        }
+
+        public void Stop()
+        {
+            if (_users == 0) return;
+            if (--_users > 0) return;
+            StopCapture();
+        }
+
+        private void StartCapture()
         {
             if (_capture != null) return;
             try
@@ -70,7 +86,7 @@ namespace Crest.Services
             }
         }
 
-        public void Stop()
+        private void StopCapture()
         {
             var capture = _capture;
             _capture = null;
@@ -103,8 +119,8 @@ namespace Crest.Services
         public void Restart()
         {
             if (_capture == null) return;
-            Stop();
-            Start();
+            StopCapture();
+            StartCapture();
         }
 
         // Capture thread.
@@ -229,6 +245,10 @@ namespace Crest.Services
             }
         }
 
-        public void Dispose() => Stop();
+        public void Dispose()
+        {
+            _users = 0;
+            StopCapture();
+        }
     }
 }

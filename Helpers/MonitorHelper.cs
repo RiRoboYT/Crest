@@ -83,7 +83,7 @@ namespace Crest.Helpers
 
         public static List<MonitorOption> GetOptions()
         {
-            var options = new List<MonitorOption> { new("", "Primary monitor") };
+            var options = new List<MonitorOption> { new("", "Primary monitor"), new("*", "Every monitor (one notch each)") };
             options.AddRange(GetMonitors().Select(m => new MonitorOption(m.DeviceName, m.Label)));
             return options;
         }

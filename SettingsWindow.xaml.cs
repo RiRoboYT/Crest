@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -48,6 +49,8 @@ namespace Crest
             ("Spectrum", "Spectrum", "The little bars that dance while music plays."),
             ("Media", "Media", "What the notch shows about the song that's playing."),
             ("Behavior", "Behavior", "Startup, hover and animation."),
+            ("Activities", "Activities", "Pop-ups for charging, headphones, meetings, volume and more."),
+            ("Widgets", "Widgets", "Pages of the open notch: lyrics, calendar, weather, system, timer, shelf and notes."),
             ("About", "About", "Version, files and tips."),
         };
 
@@ -77,6 +80,9 @@ namespace Crest
                 .ToList();
             RefreshMonitors();
             BuildPresetCards();
+            RenderRules();
+            RuleAppBox.TextChanged += (_, _) =>
+                RuleAppPlaceholder.Visibility = RuleAppBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             // DataContext only after the lists exist, so bound selections (font) aren't reset.
             DataContext = _settings;
@@ -105,7 +111,10 @@ namespace Crest
             Closed += OnClosed;
         }
 
-        private static MainWindow? Notch => Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+        private static void ForEachNotch(Action<MainWindow> action)
+        {
+            foreach (var n in Application.Current.Windows.OfType<MainWindow>()) action(n);
+        }
 
         // =====================================================================
         //  Theme
@@ -176,6 +185,8 @@ namespace Crest
             PageSize.Visibility = tag == "Size" ? Visibility.Visible : Visibility.Collapsed;
             PageSpectrum.Visibility = tag == "Spectrum" ? Visibility.Visible : Visibility.Collapsed;
             PageMedia.Visibility = tag == "Media" ? Visibility.Visible : Visibility.Collapsed;
+            PageActivities.Visibility = tag == "Activities" ? Visibility.Visible : Visibility.Collapsed;
+            PageWidgets.Visibility = tag == "Widgets" ? Visibility.Visible : Visibility.Collapsed;
             PageBehavior.Visibility = tag == "Behavior" ? Visibility.Visible : Visibility.Collapsed;
             PageAbout.Visibility = tag == "About" ? Visibility.Visible : Visibility.Collapsed;
             PreviewCard.Visibility = tag == "About" ? Visibility.Collapsed : Visibility.Visible;
@@ -207,6 +218,9 @@ namespace Crest
                     break;
                 case nameof(AppSettings.Shape):
                     SyncSegments();
+                    break;
+                case nameof(AppSettings.AppRules):
+                    RenderRules();
                     break;
                 case nameof(AppSettings.MonitorDevice):
                     SyncMonitorSelection();
@@ -380,7 +394,7 @@ namespace Crest
         private void PinCheck_Changed(object sender, RoutedEventArgs e)
         {
             bool pinned = PinCheck.IsChecked == true;
-            Notch?.SetPreviewExpanded(pinned);
+            ForEachNotch(n => n.SetPreviewExpanded(pinned));
             if (pinned) SetPreviewState(NotchState.Expanded);
         }
 
@@ -526,6 +540,93 @@ namespace Crest
         }
 
         // =====================================================================
+        //  Per-app rules
+        // =====================================================================
+
+        private void RenderRules()
+        {
+            RulesList.Children.Clear();
+            if (_settings.AppRules.Count == 0)
+            {
+                RulesList.Children.Add(new TextBlock
+                {
+                    Text = "No rules yet.",
+                    Style = (Style)FindResource("Caption"),
+                    Margin = new Thickness(0, 4, 0, 0)
+                });
+                return;
+            }
+
+            foreach (var rule in _settings.AppRules)
+            {
+                var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
+
+                var remove = new Button { Content = "Remove", Style = (Style)FindResource("GhostButton"), Padding = new Thickness(12, 4, 12, 4) };
+                var captured = rule;
+                remove.Click += (_, _) =>
+                {
+                    _settings.AppRules = _settings.AppRules.Where(r => !ReferenceEquals(r, captured)).ToList();
+                };
+                DockPanel.SetDock(remove, Dock.Right);
+                row.Children.Add(remove);
+
+                var action = new Border { CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+                action.SetResourceReference(Border.BackgroundProperty, rule.Action == RuleAction.HideNotch ? "S.AccentSoft" : "S.Control");
+                var actionText = new TextBlock { Text = rule.Action == RuleAction.HideNotch ? "Hide the notch" : "No pop-ups", FontSize = 12 };
+                actionText.SetResourceReference(TextBlock.ForegroundProperty, "S.Text");
+                action.Child = actionText;
+                DockPanel.SetDock(action, Dock.Right);
+                row.Children.Add(action);
+
+                var name = new TextBlock { Text = rule.ProcessName, Style = (Style)FindResource("RowTitle"), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+                row.Children.Add(name);
+
+                RulesList.Children.Add(row);
+                RulesList.Children.Add(new Border { Style = (Style)FindResource("Divider") });
+            }
+        }
+
+        private void AddRule_Click(object sender, RoutedEventArgs e)
+        {
+            string name = RuleAppBox.Text.Trim();
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
+            if (name.Length == 0) return;
+
+            var action = RuleActionCombo.SelectedIndex == 1 ? RuleAction.HideNotch : RuleAction.NoPopups;
+            var rules = _settings.AppRules.Where(r => !r.Matches(name)).ToList();   // replace an existing rule for the app
+            rules.Add(new AppRule { ProcessName = name, Action = action });
+            _settings.AppRules = rules;
+            RuleAppBox.Text = "";
+        }
+
+        private void RunningAppsCombo_DropDownOpened(object? sender, EventArgs e)
+        {
+            // Apps with a visible window, by process name.
+            var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var p in Process.GetProcesses())
+            {
+                try
+                {
+                    if (p.MainWindowHandle != IntPtr.Zero && p.Id != Environment.ProcessId) names.Add(p.ProcessName);
+                }
+                catch
+                {
+                    // access denied – skip
+                }
+                finally
+                {
+                    p.Dispose();
+                }
+            }
+            RunningAppsCombo.ItemsSource = names.ToList();
+        }
+
+        private void RunningAppsCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (RunningAppsCombo.SelectedItem is string name) RuleAppBox.Text = name;
+        }
+
+        // =====================================================================
         //  Buttons
         // =====================================================================
 
@@ -628,7 +729,7 @@ namespace Crest
             _settings.PropertyChanged -= OnSettingsChanged;
             _media.Updated -= OnMediaUpdated;
             SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;   // static event: must unsubscribe
-            Notch?.SetPreviewExpanded(false);
+            ForEachNotch(n => n.SetPreviewExpanded(false));
         }
     }
 }

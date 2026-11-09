@@ -15,6 +15,32 @@ namespace Crest.Models
         Pill
     }
 
+    /// <summary>What a per-app rule does while that app is in front.</summary>
+    public enum RuleAction
+    {
+        /// <summary>Hide the notch completely.</summary>
+        HideNotch,
+        /// <summary>Keep the notch, but no peeks or pop-ups.</summary>
+        NoPopups
+    }
+
+    /// <summary>"While &lt;process&gt; is in front, do &lt;action&gt;".</summary>
+    public sealed class AppRule
+    {
+        public string ProcessName { get; set; } = "";
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public RuleAction Action { get; set; } = RuleAction.NoPopups;
+
+        /// <summary>"Game.exe" / "game" / " GAME " all match the process "game".</summary>
+        public bool Matches(string processName)
+        {
+            string n = (ProcessName ?? "").Trim();
+            if (n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) n = n[..^4];
+            return n.Length > 0 && string.Equals(n, processName, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     /// <summary>Theme of the settings window (the notch has its own colors).</summary>
     public enum AppTheme
     {
@@ -42,7 +68,7 @@ namespace Crest.Models
         private double _shoulderSize = 10;
         private double _topMargin = 0;
         private double _horizontalOffset = 0;
-        private string _monitorDevice = "";          // "" = primary monitor
+        private string _monitorDevice = "";          // "" = primary monitor, "*" = every monitor
 
         // ---------- Appearance ----------
         private string _backgroundColor = "#000000";
@@ -72,6 +98,43 @@ namespace Crest.Models
         private bool _scrollLongTitles = true;
         private bool _useAlbumColors = false;
         private bool _shrinkWhenIdle = true;
+        private bool _lyricsEnabled = true;
+        private bool _lyricsInCollapsed = false;
+
+        // ---------- Activities (pop-ups) ----------
+        private bool _chargingActivity = true;
+        private bool _headphonesActivity = true;
+        private bool _calendarActivity = true;
+        private string _calendarUrl = "";
+        private int _calendarReminderMinutes = 10;
+        private bool _volumeHud = true;
+        private bool _brightnessHud = true;
+        private bool _privacyDots = true;
+        private bool _timerSound = true;
+        private bool _quietInFullscreen = true;
+        private List<AppRule> _appRules = new();
+
+        // ---------- Look ----------
+        private bool _albumGlow = true;
+        private bool _bouncyAnimations = true;
+
+        // ---------- Pages in the expanded view ----------
+        private bool _pageLyrics = true;
+        private bool _pageCalendar = true;
+        private bool _pageWeather = true;
+        private bool _pageSystem = true;
+        private bool _pageTimer = true;
+        private bool _pageShelf = true;
+        private bool _pageNotes = true;
+        private string _weatherCity = "";
+        private bool _weatherFahrenheit = false;
+        private bool _clipboardHistory = false;
+
+        // ---------- Gestures ----------
+        private bool _scrollSkipsTracks = true;
+        private bool _doubleClickPlayPause = true;
+        private bool _middleClickMute = true;
+        private bool _hotkeyEnabled = true;
 
         // ---------- Behavior ----------
         private bool _startWithWindows = false;
@@ -136,6 +199,49 @@ namespace Crest.Models
         public bool UseAlbumColors { get => _useAlbumColors; set => Set(ref _useAlbumColors, value); }
         /// <summary>Dynamic-Island style: when nothing plays, the notch shrinks to just the time.</summary>
         public bool ShrinkWhenIdle { get => _shrinkWhenIdle; set => Set(ref _shrinkWhenIdle, value); }
+        public bool LyricsEnabled { get => _lyricsEnabled; set => Set(ref _lyricsEnabled, value); }
+        /// <summary>Show the current lyric line in the collapsed notch instead of the time.</summary>
+        public bool LyricsInCollapsed { get => _lyricsInCollapsed; set => Set(ref _lyricsInCollapsed, value); }
+
+        // ================================================================ Activities
+        public bool ChargingActivity { get => _chargingActivity; set => Set(ref _chargingActivity, value); }
+        public bool HeadphonesActivity { get => _headphonesActivity; set => Set(ref _headphonesActivity, value); }
+        public bool CalendarActivity { get => _calendarActivity; set => Set(ref _calendarActivity, value); }
+        /// <summary>Private iCal (.ics) address of the user's calendar (Google / Outlook / iCloud).</summary>
+        public string CalendarUrl { get => _calendarUrl; set => Set(ref _calendarUrl, (value ?? "").Trim()); }
+        public int CalendarReminderMinutes { get => _calendarReminderMinutes; set => Set(ref _calendarReminderMinutes, (int)Clamp(value, 1, 60)); }
+        public bool VolumeHud { get => _volumeHud; set => Set(ref _volumeHud, value); }
+        public bool BrightnessHud { get => _brightnessHud; set => Set(ref _brightnessHud, value); }
+        public bool PrivacyDots { get => _privacyDots; set => Set(ref _privacyDots, value); }
+        public bool TimerSound { get => _timerSound; set => Set(ref _timerSound, value); }
+        /// <summary>No peeks / pop-ups while a fullscreen app is in front on that monitor.</summary>
+        public bool QuietInFullscreen { get => _quietInFullscreen; set => Set(ref _quietInFullscreen, value); }
+        /// <summary>Replace the whole list to change it (so the change is noticed and saved).</summary>
+        public List<AppRule> AppRules { get => _appRules; set => Set(ref _appRules, value ?? new List<AppRule>()); }
+
+        // ================================================================ Look
+        public bool AlbumGlow { get => _albumGlow; set => Set(ref _albumGlow, value); }
+        public bool BouncyAnimations { get => _bouncyAnimations; set => Set(ref _bouncyAnimations, value); }
+
+        // ================================================================ Pages
+        public bool PageLyrics { get => _pageLyrics; set => Set(ref _pageLyrics, value); }
+        public bool PageCalendar { get => _pageCalendar; set => Set(ref _pageCalendar, value); }
+        public bool PageWeather { get => _pageWeather; set => Set(ref _pageWeather, value); }
+        public bool PageSystem { get => _pageSystem; set => Set(ref _pageSystem, value); }
+        public bool PageTimer { get => _pageTimer; set => Set(ref _pageTimer, value); }
+        public bool PageShelf { get => _pageShelf; set => Set(ref _pageShelf, value); }
+        public bool PageNotes { get => _pageNotes; set => Set(ref _pageNotes, value); }
+        public string WeatherCity { get => _weatherCity; set => Set(ref _weatherCity, (value ?? "").Trim()); }
+        public bool WeatherFahrenheit { get => _weatherFahrenheit; set => Set(ref _weatherFahrenheit, value); }
+        /// <summary>Remember the last few copied texts (memory only, never saved to disk).</summary>
+        public bool ClipboardHistory { get => _clipboardHistory; set => Set(ref _clipboardHistory, value); }
+
+        // ================================================================ Gestures
+        public bool ScrollSkipsTracks { get => _scrollSkipsTracks; set => Set(ref _scrollSkipsTracks, value); }
+        public bool DoubleClickPlayPause { get => _doubleClickPlayPause; set => Set(ref _doubleClickPlayPause, value); }
+        public bool MiddleClickMute { get => _middleClickMute; set => Set(ref _middleClickMute, value); }
+        /// <summary>Win + Alt + N opens / closes the notch.</summary>
+        public bool HotkeyEnabled { get => _hotkeyEnabled; set => Set(ref _hotkeyEnabled, value); }
 
         // ================================================================ Behavior
         public bool StartWithWindows { get => _startWithWindows; set => Set(ref _startWithWindows, value); }

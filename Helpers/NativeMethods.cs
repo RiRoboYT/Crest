@@ -125,6 +125,99 @@ namespace Crest.Helpers
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
+        // ------------------------------------------------------------------ v1.2 additions
+        public const int WM_HOTKEY = 0x0312;
+        public const int WM_CLIPBOARDUPDATE = 0x031D;
+        public const int WM_MOUSEHWHEEL = 0x020E;
+
+        public const uint MOD_ALT = 0x0001;
+        public const uint MOD_WIN = 0x0008;
+        public const uint MOD_NOREPEAT = 0x4000;
+        public const uint VK_N = 0x4E;
+        public const int VK_SHIFT = 0x10;
+
+        public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+        public static readonly IntPtr HWND_MESSAGE = new(-3);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct FILETIME
+        {
+            public uint Low;
+            public uint High;
+            public ulong Value => ((ulong)High << 32) | Low;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetShellWindow();
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetDesktopWindow();
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder className, int maxCount);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern short GetKeyState(int nVirtKey);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetSystemTimes(out FILETIME idleTime, out FILETIME kernelTime, out FILETIME userTime);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX buffer);
+
+        public static bool IsShiftDown() => (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+
+        public static string GetWindowClass(IntPtr hwnd)
+        {
+            var sb = new System.Text.StringBuilder(256);
+            return GetClassName(hwnd, sb, sb.Capacity) > 0 ? sb.ToString() : "";
+        }
+
         /// <summary>Simulates a media/volume key press (shows the normal Windows volume OSD).</summary>
         public static void PressKey(byte vk)
         {
