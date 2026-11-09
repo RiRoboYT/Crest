@@ -821,6 +821,11 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
 .copy { padding: 8px 12px; border-radius: 9px; background: var(--card-2); border: 1px solid var(--line-2); font: 600 12px var(--font); color: var(--sub); transition: color .2s, border-color .2s; }
 .copy:hover { color: #fff; border-color: #444457; }
 .note { margin-top: 18px; color: var(--faint); font-size: 12.5px; }
+.dl-steps { list-style: none; counter-reset: step; margin: 30px auto 0; padding: 0; max-width: 520px; display: grid; gap: 10px; text-align: left; }
+.dl-steps li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; color: var(--sub); font-size: 14px; line-height: 1.5; }
+.dl-steps li::before { content: counter(step); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font: 600 12px var(--mono); color: var(--text, #fff); border: 1px solid var(--line-2); background: rgba(255,255,255,.04); }
+.dl-steps b { color: var(--text, #fff); font-weight: 600; }
+.dl-steps code { font: 500 12.5px var(--mono); padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.06); word-break: break-all; }
 
 /* =====================================================================
    FAQ
@@ -1234,16 +1239,16 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
     <div class="dl-card reveal">
       <span class="eyebrow"><span class="dot"></span>Version <span class="js-version">1.1.0</span> · Free</span>
       <h2 class="h2">Put a crest on<br /><span class="grad-text shimmer">your screen.</span></h2>
-      <p class="lead">One small file. Double-click it and the notch appears. Right-click it any time for settings.</p>
-      <a class="btn btn-primary dl-big magnetic js-download" id="dlButton" href="#" data-cursor="label" data-cursor-label="Download">
+      <p class="lead">Grab the full project as one zip, build it once, and you get a single <b>Crest.exe</b>. Double-click it and the notch appears.</p>
+      <a class="btn btn-primary dl-big magnetic js-download" id="dlButton" href="downloads/Crest.zip" download="Crest.zip" data-cursor="label" data-cursor-label="Download">
         <span class="btn-label">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 19h16"/></svg>
-          Download Crest.exe
+          Download Crest.zip
           <span class="ver">v<span class="js-version">1.1.0</span></span>
         </span>
       </a>
       <div class="dl-meta">
-        <span>Windows 10 (1809+) &amp; 11</span><span>x64</span><span>Self-contained · no .NET needed</span>
+        <span>Windows 10 (1809+) &amp; 11</span><span>Full source · <span class="js-zipsize">zip</span></span><span>Builds to one self-contained .exe</span>
       </div>
       <div class="dl-alt">
         <a class="btn btn-ghost btn-sm magnetic js-repo" href="#" target="_blank" rel="noopener" data-cursor="hover">
@@ -1253,11 +1258,17 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
           <span class="btn-label">All releases</span>
         </a>
       </div>
+      <ol class="dl-steps">
+        <li><span><b>Unzip</b> Crest.zip anywhere.</span></li>
+        <li><span>Install the free <a href="https://dotnet.microsoft.com/download/dotnet/8.0" target="_blank" rel="noopener" data-cursor="hover"><b>.NET 8 SDK</b></a> (only needed to build).</span></li>
+        <li><span>Open a terminal in the <b>Crest</b> folder and run the command below.</span></li>
+        <li><span>Your app is <code>bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\Crest.exe</code> — copy it anywhere and run it.</span></li>
+      </ol>
       <div class="code">
         <span class="prompt">❯</span><code id="buildCmd">dotnet publish -c Release</code>
         <button class="copy" id="copyBtn" data-cursor="hover">Copy</button>
       </div>
-      <p class="note">Windows may show a SmartScreen notice the first time because the app isn't code-signed yet — click <b>More info → Run anyway</b>.</p>
+      <p class="note">Tip: <code>dotnet run</code> starts it straight away without publishing. Windows may show a SmartScreen notice for an unsigned .exe — click <b>More info → Run anyway</b>.</p>
     </div>
   </div>
 </section>
@@ -1306,8 +1317,9 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 const CONFIG = {
   version: "1.2.0",
   repoUrl: "https://github.com/RiRoboYT/Crest",
-  // Upload Crest.exe as an asset of a GitHub Release and this link always serves the newest one.
-  downloadUrl: "https://github.com/RiRoboYT/Crest/releases/latest/download/Crest.exe",
+  // The project zip is hosted with the site (docs/downloads/Crest.zip), so the button downloads it directly.
+  downloadUrl: "downloads/Crest.zip",
+  zipSize: "__ZIPSIZE__",
 };
 
 (() => {
@@ -1323,7 +1335,8 @@ const CONFIG = {
   $$(".js-repo").forEach(a => a.href = CONFIG.repoUrl);
   $$(".js-releases").forEach(a => a.href = CONFIG.repoUrl + "/releases");
   $("#dlButton").href = CONFIG.downloadUrl;
-  $("#dlButton").addEventListener("click", () => toast("Download starting… thanks for trying Crest!"));
+  $$(".js-zipsize").forEach(el => el.textContent = CONFIG.zipSize);
+  $("#dlButton").addEventListener("click", () => toast("Crest.zip is downloading — unzip it and follow the steps below."));
 
   // ---------- time ----------
   const fmtTime = d => d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });

@@ -49,7 +49,7 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 `docs/index.html` is the Crest landing page: a single self-contained file with a live, interactive notch demo.
 
 * **Host it free with GitHub Pages:** on GitHub, open **Settings → Pages**, choose **Deploy from a branch**, pick your branch and the **`/docs`** folder.
-* **Make the Download button work:** publish a GitHub **Release** and attach the built `Crest.exe` as an asset. The button links to `releases/latest/download/Crest.exe`, so it always serves the newest release.
+* **Download button:** it serves `docs/downloads/Crest.zip` (the whole project, without the website) straight from the site. After changing the code, refresh it from the repo root with `git archive --format=zip --prefix=Crest/ -o docs/downloads/Crest.zip HEAD -- . ":(exclude)docs"` and commit it.
 * **Change links or version:** edit the `CONFIG` block at the top of the `<script>` in `docs/index.html`.
 
 ## Project layout
