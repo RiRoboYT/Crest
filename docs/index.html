@@ -807,9 +807,10 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
   margin-top: 40px; font-size: 18px; padding: 20px 34px; border-radius: 18px;
 }
 .dl-big svg { width: 22px; height: 22px; }
+@media (max-width: 480px) { .dl-big { font-size: 16px; padding: 18px 22px; max-width: 100%; } .dl-big .ver { display: none; } }
 .dl-big .ver { font: 600 12px var(--mono); padding: 4px 8px; border-radius: 7px; background: rgba(0,0,0,.25); }
 .dl-meta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
-.dl-meta span { font: 500 12px var(--mono); color: var(--sub); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255,255,255,.02); }
+.dl-meta > span { font: 500 12px var(--mono); color: var(--sub); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255,255,255,.02); }
 .dl-alt { margin-top: 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .code {
   margin: 30px auto 0; max-width: 520px; display: flex; align-items: center; gap: 12px; text-align: left;
@@ -1319,7 +1320,7 @@ const CONFIG = {
   repoUrl: "https://github.com/RiRoboYT/Crest",
   // The project zip is hosted with the site (docs/downloads/Crest.zip), so the button downloads it directly.
   downloadUrl: "downloads/Crest.zip",
-  zipSize: "__ZIPSIZE__",
+  zipSize: "125 KB",
 };
 
 (() => {
