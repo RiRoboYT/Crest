@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -99,7 +100,19 @@ namespace Crest.Helpers
         /// </summary>
         public static Color? ExtractAccent(BitmapSource? source)
         {
-            if (source == null) return null;
+            var palette = ExtractPalette(source, 1);
+            return palette.Length > 0 ? palette[0] : null;
+        }
+
+        /// <summary>
+        /// Up to <paramref name="maxColors"/> clearly different vivid colors of an image, most
+        /// prominent first. Similar shades are grouped by hue, so a cover that is "mostly blue with
+        /// a pink logo" gives [blue, pink]; a plain one-color cover gives a single entry; a gray
+        /// cover gives none.
+        /// </summary>
+        public static Color[] ExtractPalette(BitmapSource? source, int maxColors = 3)
+        {
+            if (source == null || maxColors <= 0) return Array.Empty<Color>();
             try
             {
                 BitmapSource bmp = source.Format == PixelFormats.Bgra32
@@ -107,7 +120,7 @@ namespace Crest.Helpers
                     : new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
 
                 int w = bmp.PixelWidth, h = bmp.PixelHeight;
-                if (w <= 0 || h <= 0) return null;
+                if (w <= 0 || h <= 0) return Array.Empty<Color>();
 
                 int stride = w * 4;
                 var pixels = new byte[stride * h];
@@ -140,30 +153,72 @@ namespace Crest.Helpers
                     sumB[bin] += b * weight;
                 }
 
-                int best = -1;
-                double bestScore = 0;
+                // Strongest bins first, then group them by hue. Each group keeps the color of its
+                // strongest bin (the most vivid one) and adds up the score of everything similar.
+                var order = new List<int>();
                 for (int i = 0; i < bins; i++)
+                    if (score[i] > 0) order.Add(i);
+                order.Sort((a, b) => score[b].CompareTo(score[a]));
+
+                var groups = new List<(Color Color, double Hue, double Score)>();
+                foreach (int bin in order)
                 {
-                    if (score[i] > bestScore)
+                    var c = Color.FromRgb(
+                        (byte)Math.Clamp(sumR[bin] / score[bin], 0, 255),
+                        (byte)Math.Clamp(sumG[bin] / score[bin], 0, 255),
+                        (byte)Math.Clamp(sumB[bin] / score[bin], 0, 255));
+                    ToHsv(c, out double hue, out double sat, out _);
+                    if (sat < 0.18) continue;            // too gray to be interesting
+
+                    int match = -1;
+                    for (int g = 0; g < groups.Count; g++)
                     {
-                        bestScore = score[i];
-                        best = i;
+                        if (HueDistance(groups[g].Hue, hue) < 28) { match = g; break; }
                     }
+                    if (match >= 0)
+                        groups[match] = (groups[match].Color, groups[match].Hue, groups[match].Score + score[bin]);
+                    else
+                        groups.Add((c, hue, score[bin]));
                 }
-                if (best < 0 || bestScore <= 0) return null;
+                if (groups.Count == 0) return Array.Empty<Color>();
 
-                var result = Color.FromRgb(
-                    (byte)Math.Clamp(sumR[best] / bestScore, 0, 255),
-                    (byte)Math.Clamp(sumG[best] / bestScore, 0, 255),
-                    (byte)Math.Clamp(sumB[best] / bestScore, 0, 255));
-
-                ToHsv(result, out _, out double rs, out _);
-                return rs < 0.18 ? null : result;        // too gray to be interesting
+                groups.Sort((a, b) => b.Score.CompareTo(a.Score));
+                double top = groups[0].Score;
+                var result = new List<Color> { groups[0].Color };
+                var hues = new List<double> { groups[0].Hue };
+                for (int g = 1; g < groups.Count && result.Count < maxColors; g++)
+                {
+                    if (groups[g].Score < top * 0.16) break;     // a few stray pixels are not a "primary" color
+                    bool distinct = true;
+                    foreach (double used in hues)
+                        if (HueDistance(used, groups[g].Hue) < 40) { distinct = false; break; }
+                    if (!distinct) continue;
+                    result.Add(groups[g].Color);
+                    hues.Add(groups[g].Hue);
+                }
+                return result.ToArray();
             }
             catch
             {
-                return null;
+                return Array.Empty<Color>();
             }
+        }
+
+        private static double HueDistance(double a, double b)
+        {
+            double d = Math.Abs(a - b) % 360;
+            return d > 180 ? 360 - d : d;
+        }
+
+        /// <summary>Straight RGB mix of two colors (t = 0 → a, t = 1 → b).</summary>
+        public static Color Lerp(Color a, Color b, double t)
+        {
+            t = Math.Clamp(t, 0, 1);
+            return Color.FromArgb(
+                (byte)Math.Round(a.A + (b.A - a.A) * t),
+                (byte)Math.Round(a.R + (b.R - a.R) * t),
+                (byte)Math.Round(a.G + (b.G - a.G) * t),
+                (byte)Math.Round(a.B + (b.B - a.B) * t));
         }
 
         /// <summary>Makes an accent readable on the given background (bright on dark, deep on light).</summary>

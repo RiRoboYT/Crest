@@ -23,7 +23,7 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 | Privacy dots | Green / orange dot while any app uses the camera / microphone. |
 | Gestures | Swipe sideways to skip songs, double-click to play/pause, middle-click to mute, Win + Alt + N to open. |
 | Notes & clipboard | A quick note, and (optional) your last few copied texts. |
-| Look | Album-colored glow and springy animations. |
+| Look | Ambient glow in the cover's colors that pulses with the beat and breathes between the cover's main colors (adjustable intensity), plus springy animations. |
 | Monitors | A notch on every monitor, if you like. |
 | Per-app rules | Hide Crest, or keep it quiet, while specific apps are in front. Also quiet during fullscreen. |
 
@@ -62,7 +62,8 @@ Crest/
 ├── App.xaml / App.xaml.cs               ← startup, single instance, tray, wiring
 ├── MainWindow.xaml / .cs                ← the notch: window, states, media, volume
 ├── MainWindow.Pages.cs                  ← expanded pages (lyrics, calendar, weather, system, timer, shelf, notes)
-├── MainWindow.Activities.cs             ← pop-ups, volume/brightness indicator, timer bubble, privacy dots, glow
+├── MainWindow.Activities.cs             ← pop-ups, volume/brightness indicator, timer bubble, privacy dots
+├── MainWindow.Glow.cs                   ← ambient album glow: colors, breathing, beat pulse, click-through
 ├── MainWindow.Input.cs                  ← gestures, hotkey, drag & drop, typing
 ├── SettingsWindow.xaml / .cs            ← settings UI with live preview
 ├── Themes/SettingsStyles.xaml           ← dark/light control styles for the settings window
@@ -137,5 +138,5 @@ Settings are saved to `settings.json` next to `Crest.exe`. If that folder isn't 
 * **Calendar:** Windows doesn't let normal desktop apps read its built-in calendar, so Crest uses your calendar's private iCal link instead. Repeating events (daily / weekly / monthly) are supported; all-day events are skipped.
 * **Volume indicator:** Windows' own volume pop-up can't be hidden from outside, so it may still appear when you use the volume keys. Scrolling on the notch changes the volume directly and only shows Crest's indicator.
 * **System page:** shows CPU, memory, GPU usage and disk. Temperatures need vendor tools and admin rights, so they aren't included.
-* **Album glow:** the glow is part of the overlay, so a thin area just below the notch catches clicks while music plays. Turn it off in Settings → Appearance if that gets in the way.
+* **Album glow:** while the glow is showing, the overlay turns click-through whenever the cursor is away from the notch, so the light never blocks clicks on the app below. "Pulse with the music" shares the loopback listener with the real spectrum; when no sound can be read (for example an app using exclusive audio mode) it falls back to a calm built-in beat.
 * **Memory:** WPF's baseline working set is usually about 40–60 MB.

@@ -271,20 +271,24 @@
                   IsHitTestVisible="False" />
 
             <Grid x:Name="NotchStack" VerticalAlignment="Top">
-                <!-- Soft album-colored glow behind the notch while music plays -->
+                <!-- Soft album-colored glow behind the notch while music plays (driven by MainWindow.Glow.cs) -->
                 <Border x:Name="GlowLayer"
                         VerticalAlignment="Top"
                         IsHitTestVisible="False"
                         Opacity="0"
+                        RenderTransformOrigin="0.5,0"
                         Width="{Binding ActualWidth, ElementName=Notch}"
                         Height="{Binding ActualHeight, ElementName=Notch}"
                         CornerRadius="{Binding CornerRadius, ElementName=Notch}"
                         Background="{DynamicResource GlowBrush}">
                     <Border.Effect>
-                        <BlurEffect Radius="24" KernelType="Gaussian" RenderingBias="Performance" />
+                        <BlurEffect x:Name="GlowBlur" Radius="40" KernelType="Gaussian" RenderingBias="Performance" />
                     </Border.Effect>
                     <Border.RenderTransform>
-                        <TranslateTransform Y="5" />
+                        <TransformGroup>
+                            <ScaleTransform x:Name="GlowScale" />
+                            <TranslateTransform x:Name="GlowShift" Y="5" />
+                        </TransformGroup>
                     </Border.RenderTransform>
                 </Border>
 

@@ -53,6 +53,8 @@ namespace Crest.Services
         public ImageSource? Thumbnail { get; private set; }
         /// <summary>Most prominent vivid color of the cover art, or null.</summary>
         public Color? AlbumColor { get; private set; }
+        /// <summary>The cover's main vivid colors (1–3, most prominent first), or empty.</summary>
+        public IReadOnlyList<Color> AlbumPalette { get; private set; } = Array.Empty<Color>();
         public bool CanSeek { get; private set; }
         /// <summary>App User Model ID of the app that owns the session (used to bring it to front).</summary>
         public string SourceApp { get; private set; } = "";
@@ -251,6 +253,7 @@ namespace Crest.Services
             Duration = TimeSpan.Zero;
             Thumbnail = null;
             AlbumColor = null;
+            AlbumPalette = Array.Empty<Color>();
             CanSeek = false;
             SourceApp = "";
             _basePosition = TimeSpan.Zero;
@@ -350,6 +353,7 @@ namespace Crest.Services
                 {
                     Thumbnail = null;
                     AlbumColor = null;
+                    AlbumPalette = Array.Empty<Color>();
                 }
                 Updated?.Invoke(this, EventArgs.Empty);
 
@@ -360,7 +364,9 @@ namespace Crest.Services
                 if (version != _mediaVersion || !ReferenceEquals(s, _session)) return;
 
                 Thumbnail = thumb;
-                AlbumColor = ColorHelper.ExtractAccent(thumb as BitmapSource);
+                var palette = ColorHelper.ExtractPalette(thumb as BitmapSource, 3);
+                AlbumPalette = palette;
+                AlbumColor = palette.Length > 0 ? palette[0] : null;
                 Updated?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)

@@ -29,7 +29,6 @@ namespace Crest
 
         private bool _bubbleShown;
         private double _bubbleWidth;
-        private bool _glowOn;
 
         private void InitActivities()
         {
@@ -65,6 +64,7 @@ namespace Crest
         private void CloseActivities()
         {
             _hudSuppressTimer?.Stop();
+            CloseGlow();
         }
 
         // =====================================================================
@@ -273,19 +273,6 @@ namespace Crest
             ExpandedPrivacyDots.ToolTip = any ? tip : null;
 
             if (sizeChanged) ResizeCollapsed(animate);
-        }
-
-        // =====================================================================
-        //  Album glow
-        // =====================================================================
-
-        private void UpdateGlow(bool animate)
-        {
-            if (GlowLayer == null) return;
-            bool on = _settings.AlbumGlow && _showPlaying && Media.AlbumColor != null && IsEffectivelyVisible;
-            if (on == _glowOn) return;
-            _glowOn = on;
-            Fade(GlowLayer, on ? 0.55 : 0, animate ? 600 : 0, 0);
         }
     }
 }

@@ -452,7 +452,17 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
 .notch[data-state="activity"] .n-activity { opacity: 1; pointer-events: auto; transition-delay: .14s; }
 .notch.dots[data-state="idle"] { --w: 138px; }
 .notch.dots[data-state="collapsed"] { --w: 242px; }
-.notch.glow { box-shadow: 0 12px 44px -10px var(--glow, transparent); }
+@property --gc { syntax: "<color>"; inherits: false; initial-value: transparent; }
+@property --gb { syntax: "<number>"; inherits: false; initial-value: 0; }
+/* Ambient glow: breathes between the cover's two colors and flares on the beat (~118 BPM) */
+.notch.glow {
+  --gc: var(--glow-a, var(--glow, transparent));
+  box-shadow: 0 calc(10px + 8px * var(--gb)) calc(46px + 30px * var(--gb)) calc(-6px + 6px * var(--gb)) var(--gc);
+  animation: glow-breathe 8s ease-in-out infinite, glow-beat .508s cubic-bezier(.2,.7,.3,1) infinite;
+}
+@keyframes glow-breathe { 0%, 100% { --gc: var(--glow-a, var(--glow)); } 50% { --gc: var(--glow-b, var(--glow)); } }
+@keyframes glow-beat { 0% { --gb: 1; } 100% { --gb: 0; } }
+@media (prefers-reduced-motion: reduce) { .notch.glow { animation: none; --gb: .4; } }
 .n-dots { display: none; gap: 3px; margin-right: 6px; flex: none; }
 .notch.dots .n-dots { display: flex; }
 .n-dots i { width: 7px; height: 7px; border-radius: 50%; animation: dot-pulse 2s ease-in-out infinite; }
@@ -1766,7 +1776,7 @@ const CONFIG = {
       this.el.classList.toggle("playing", this.showPlaying);
       this.el.classList.toggle("glow", this.showPlaying && player.playing && !this.forced);
       this.el.classList.toggle("dots", player.call);
-      this.el.style.setProperty("--glow", player.song.accent);
+      this.setGlow(player.song);
       $$(".n-title", this.el).forEach(t => this.marquee(t));
     }
 
@@ -1830,7 +1840,15 @@ const CONFIG = {
       $(".n-mute", el).innerHTML = vol === 0 ? ICONS.mute : ICONS.vol;
       if (this.page === "lyrics") this.renderLyrics(full);
       this.el.classList.toggle("glow", this.showPlaying && player.playing && !this.forced);
-      this.el.style.setProperty("--glow", s.accent);
+      this.setGlow(s);
+    }
+
+    // Glow colors = the cover's two colors (like the app's palette), breathing between them.
+    setGlow(song) {
+      const [a, b] = song.cover.match(/#[0-9a-f]{6}/gi) || [song.accent, song.accent];
+      this.el.style.setProperty("--glow", song.accent);
+      this.el.style.setProperty("--glow-a", a);
+      this.el.style.setProperty("--glow-b", b || a);
     }
 
     renderTimer() {

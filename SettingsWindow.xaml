@@ -500,7 +500,42 @@
                                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AlbumGlow}" />
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Style="{StaticResource RowTitle}" Text="Album glow" />
-                                                <TextBlock Style="{StaticResource RowDesc}" Text="A soft glow in the cover's color under the notch while music plays." />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="Ambient light under the notch in the cover's colors while music plays (violet when the cover has no color)." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+
+                                        <StackPanel Style="{StaticResource SliderRow}" IsEnabled="{Binding AlbumGlow}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource ValuePill}">
+                                                    <TextBlock Style="{StaticResource ValueText}">
+                                                        <Run Text="{Binding GlowIntensity, Mode=OneWay}" /><Run Text=" %" />
+                                                    </TextBlock>
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Style="{StaticResource RowTitle}" Text="Glow intensity" />
+                                                    <TextBlock Style="{StaticResource RowDesc}" Text="How big and bright the light is." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" SmallChange="5" LargeChange="10" Margin="0,6,0,0"
+                                                    Value="{Binding GlowIntensity}" />
+                                        </StackPanel>
+                                        <Border Style="{StaticResource Divider}" />
+
+                                        <DockPanel Style="{StaticResource Row}" IsEnabled="{Binding AlbumGlow}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GlowReactsToMusic}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Pulse with the music" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="The light flares on the beat. Listens to the sound your PC is playing (uses a little CPU)." />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Divider}" />
+
+                                        <DockPanel Style="{StaticResource Row}" IsEnabled="{Binding AlbumGlow}">
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GlowBlendColors}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource RowTitle}" Text="Breathe between cover colors" />
+                                                <TextBlock Style="{StaticResource RowDesc}" Text="When a cover has more than one main color, the light slowly drifts between them." />
                                             </StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Divider}" />

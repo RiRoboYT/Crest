@@ -9,6 +9,14 @@ namespace Crest.Helpers
         public const int GWL_EXSTYLE = -20;
         public const int WS_EX_TOOLWINDOW = 0x00000080;   // hidden from Alt+Tab / taskbar
         public const int WS_EX_NOACTIVATE = 0x08000000;   // clicking the notch never steals focus from your game/app
+        public const int WS_EX_TRANSPARENT = 0x00000020;  // with WS_EX_LAYERED: every click goes to the window below
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X; public int Y; }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetCursorPos(out POINT point);
 
         public static readonly IntPtr HWND_TOPMOST = new(-1);
         public static readonly IntPtr HWND_NOTOPMOST = new(-2);

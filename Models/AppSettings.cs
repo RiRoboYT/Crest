@@ -116,6 +116,9 @@ namespace Crest.Models
 
         // ---------- Look ----------
         private bool _albumGlow = true;
+        private int _glowIntensity = 70;
+        private bool _glowReactsToMusic = true;
+        private bool _glowBlendColors = true;
         private bool _bouncyAnimations = true;
 
         // ---------- Pages in the expanded view ----------
@@ -221,6 +224,12 @@ namespace Crest.Models
 
         // ================================================================ Look
         public bool AlbumGlow { get => _albumGlow; set => Set(ref _albumGlow, value); }
+        /// <summary>0–100: how big and bright the glow is.</summary>
+        public int GlowIntensity { get => _glowIntensity; set => Set(ref _glowIntensity, Math.Clamp(value, 0, 100)); }
+        /// <summary>The glow pulses with the beat of whatever is playing.</summary>
+        public bool GlowReactsToMusic { get => _glowReactsToMusic; set => Set(ref _glowReactsToMusic, value); }
+        /// <summary>Covers with several main colors make the glow slowly drift between them.</summary>
+        public bool GlowBlendColors { get => _glowBlendColors; set => Set(ref _glowBlendColors, value); }
         public bool BouncyAnimations { get => _bouncyAnimations; set => Set(ref _bouncyAnimations, value); }
 
         // ================================================================ Pages

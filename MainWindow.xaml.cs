@@ -53,10 +53,8 @@ namespace Crest
         // Owned (non-frozen) brushes so album colors can fade smoothly.
         private readonly SolidColorBrush _spectrumBrush = new(Colors.White);
         private readonly SolidColorBrush _accentBrush = new(Colors.White);
-        private readonly SolidColorBrush _glowBrush = new(Color.FromRgb(0x7B, 0x6C, 0xFF));
         private Color? _spectrumTarget;
         private Color? _accentTarget;
-        private Color? _glowTarget;
 
         private readonly DispatcherTimer _clockTimer;
         private readonly DispatcherTimer _topmostBackupTimer;
@@ -111,7 +109,7 @@ namespace Crest
             InitializeComponent();
 
             Resources["AccentBrush"] = _accentBrush;
-            Resources["GlowBrush"] = _glowBrush;
+            Resources["GlowBrush"] = _glowGradient;
             _spectrum = new SpectrumAnimator(_spectrumBrush, CollapsedSpectrum, PeekSpectrum, ExpandedSpectrum);
 
             _clockTimer = new DispatcherTimer(DispatcherPriority.Background);
@@ -166,6 +164,7 @@ namespace Crest
             Subscribe(() => SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged, () => SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged);
 
             InitPages();
+            InitGlow();
             InitActivities();
             InitInput();
 
@@ -273,8 +272,9 @@ namespace Crest
             // Room for the widest state, the timer bubble on both sides (spacer), the glow and the
             // slight overshoot of the expand animation.
             double widest = Math.Max(Math.Max(s.CollapsedWidth, s.ExpandedWidth), ComputePeekWidth(s));
-            double widthDip = widest + shoulder * 2 + 2 * (BubbleMaxWidth + BubbleGap) + 96;
-            double heightDip = Math.Max(s.CollapsedHeight, s.ExpandedHeight) + topMargin + 56;
+            // Extra room around the shape for the album glow (it spreads up to ~110 px).
+            double widthDip = widest + shoulder * 2 + 2 * (BubbleMaxWidth + BubbleGap) + 2 * GlowRoom;
+            double heightDip = Math.Max(s.CollapsedHeight, s.ExpandedHeight) + topMargin + GlowRoom;
             Width = widthDip;
             Height = heightDip;
 
@@ -335,6 +335,7 @@ namespace Crest
         {
             bool visible = IsEffectivelyVisible;
             _spectrum.SetSuspended(!visible);
+            UpdateGlow(animate: visible);
             if (visible)
             {
                 if (!IsVisible) Show();
@@ -446,12 +447,10 @@ namespace Crest
             Color background = ColorHelper.Parse(s.BackgroundColor, Colors.Black);
             Color spectrum = ColorHelper.Parse(s.SpectrumColor, Colors.White);
             Color accent = ColorHelper.Parse(s.AccentColor, Colors.White);
-            Color glow = Color.FromRgb(0x7B, 0x6C, 0xFF);
 
             if (Media.AlbumColor is Color album)
             {
                 Color adjusted = ColorHelper.AdjustForBackground(album, background);
-                glow = ColorHelper.AdjustForBackground(album, Colors.Black);
                 if (s.UseAlbumColors)
                 {
                     spectrum = adjusted;
@@ -461,8 +460,7 @@ namespace Crest
 
             FadeBrush(_spectrumBrush, spectrum, ref _spectrumTarget, animate);
             FadeBrush(_accentBrush, accent, ref _accentTarget, animate);
-            FadeBrush(_glowBrush, glow, ref _glowTarget, animate);
-            UpdateGlow(animate);
+            SetGlowPalette(Media.AlbumPalette, animate);
         }
 
         private static void FadeBrush(SolidColorBrush brush, Color to, ref Color? currentTarget, bool animate)
