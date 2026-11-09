@@ -270,8 +270,7 @@ namespace Crest.Helpers
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         public static extern IntPtr GetModuleHandle(string? lpModuleName);
 
-        [DllImport("user32.dll")]
-        public static extern short GetKeyState(int nVirtKey);
+        // GetKeyState is declared further up (used by IsShiftDown).
 
         // Keep the PC awake.
         public const uint ES_CONTINUOUS = 0x80000000;
