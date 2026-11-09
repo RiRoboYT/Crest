@@ -496,7 +496,14 @@ html.is-ready .fade-up { opacity: 1; translate: 0 0; }
 .n-tabs { display: flex; gap: 2px; }
 .n-tab { width: 24px; height: 22px; border-radius: 7px; display: grid; place-items: center; opacity: .42; transition: opacity .2s, background-color .2s; }
 .n-tab:hover { background: color-mix(in srgb, var(--n-text) 14%, transparent); opacity: .85; }
-.n-tab.on { opacity: 1; }
+.n-tab.on { opacity: 1; background: color-mix(in srgb, var(--tc, #fff) 22%, transparent); }
+.n-tab { --tc: var(--n-text); opacity: .6; }
+.n-tab[data-tab="music"] { --tc: #ff5e7e; }
+.n-tab[data-tab="lyrics"] { --tc: #c084fc; }
+.n-tab[data-tab="weather"] { --tc: #5ac8fa; }
+.n-tab[data-tab="system"] { --tc: #34d399; }
+.n-tab[data-tab="timer"] { --tc: #ff9f0a; }
+.n-tab[data-tab] svg { stroke: var(--tc); }
 .n-tab svg { width: 13px; height: 13px; fill: none; stroke: var(--n-text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .n-pages { position: relative; min-height: 0; overflow: hidden; margin-top: 4px; }
 .n-page { position: absolute; inset: 0; opacity: 0; pointer-events: none; translate: var(--from, 18px) 0; transition: opacity .25s, translate .32s var(--ease-out); }
@@ -994,57 +1001,57 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow"><span class="dot"></span>New in <span class="js-version">1.2.0</span></span>
-      <h2 class="h2">Way more than<br /><span class="grad-text shimmer">a music notch.</span></h2>
-      <p class="lead">Lyrics, live activities, widgets and gestures — try most of them in the demo at the top: hover the notch, then click the icons along its top edge.</p>
+      <h2 class="h2">Your whole desk,<br /><span class="grad-text shimmer">one notch away.</span></h2>
+      <p class="lead">Version 1.3 adds a sound mixer, quick controls, a focus timer, mic mute and a lot of polish — on top of lyrics, live activities, the file shelf and everything from 1.2.</p>
     </div>
     <div class="new-grid">
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff5fa2;--d:0.00s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#2dd4bf;--d:0.00s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
-        <h3>Synced lyrics</h3>
-        <p>Lines light up in time with the song — on their own page, or right in the closed notch. Free, via LRCLIB.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></div>
+        <h3>Sound page</h3>
+        <p>Switch between speakers and headphones in one click, and give every app its own volume slider.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#30d158;--d:0.06s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#60a5fa;--d:0.06s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
-        <h3>Live activities</h3>
-        <p>Charger plugged in, headphones connected (with battery), a meeting about to start, a timer done — the notch tells you.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></div>
+        <h3>Quick controls</h3>
+        <p>Dark mode, Bluetooth, Wi-Fi, keep awake, pause pop-ups, mute mic and focus — one tap each.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff9f0a;--d:0.12s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff453a;--d:0.12s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M3 3l18 18"/></svg></div>
+        <h3>Mic mute anywhere</h3>
+        <p>Win + Alt + M mutes your microphone in every app. A red mic in the notch reminds you it's off.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff6b57;--d:0.18s">
         <span class="badge">NEW</span>
         <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg></div>
-        <h3>Split island</h3>
-        <p>A running timer or stopwatch rides along in a little bubble next to the notch, just like on a phone.</p>
+        <h3>Focus timer</h3>
+        <p>Work, break, repeat. The countdown rides in the side bubble and pop-ups stay quiet while you focus.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#4fc3ff;--d:0.18s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff5e7e;--d:0.00s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M8 4v5M13 4v5"/></svg></div>
-        <h3>Eight pages</h3>
-        <p>Music · Lyrics · Calendar · Weather · System · Timer · Shelf · Notes. Swipe sideways to flip through them.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="7" height="7" rx="2"/><path d="M14 10h7M14 14h4"/></svg></div>
+        <h3>Cover in the notch</h3>
+        <p>A tiny album cover next to the bars, icons that morph, a clock that rolls — it feels alive.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#7b6cff;--d:0.00s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ffd60a;--d:0.06s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
-        <h3>File shelf</h3>
-        <p>Drag files onto the notch to park them, then drag them out wherever you need them later.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></div>
+        <h3>Screenshots on the shelf</h3>
+        <p>Every new screenshot waits on the shelf, ready to drag into a chat. Copied images too.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff453a;--d:0.06s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#c084fc;--d:0.12s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3"/><circle cx="17" cy="12" r="3"/></svg></div>
-        <h3>Privacy dots</h3>
-        <p>A green or orange dot whenever any app is using your camera or microphone. Hover to see which one.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 11v2"/></svg></div>
+        <h3>Four visualizer styles</h3>
+        <p>Mirrored bars, classic bars, bouncing dots or a flowing wave — plus four new color presets.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#5e5ce6;--d:0.12s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#34d399;--d:0.18s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-        <h3>Gestures</h3>
-        <p>Swipe sideways to skip, double-click to play / pause, middle-click to mute, Win + Alt + N to open.</p>
-      </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#64d2ff;--d:0.18s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="9" height="7" rx="1.5"/><rect x="13" y="4" width="9" height="7" rx="1.5"/><path d="M6 15h12M9 19h6"/></svg></div>
-        <h3>Every monitor & app rules</h3>
-        <p>A notch on each screen if you like — and hide it, or keep it quiet, while chosen apps or fullscreen games are in front.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
+        <h3>Lock keys, battery & more</h3>
+        <p>Caps Lock pop-ups, low-battery alerts, internet speed, lyrics timing, settings backup and a welcome tour.</p>
       </article>
     </div>
   </div>
@@ -1316,11 +1323,11 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
    CONFIG — change these to point at your own GitHub release
    ===================================================================== */
 const CONFIG = {
-  version: "1.2.0",
+  version: "1.3.0",
   repoUrl: "https://github.com/RiRoboYT/Crest",
   // The project zip is hosted with the site (docs/downloads/Crest.zip), so the button downloads it directly.
   downloadUrl: "downloads/Crest.zip",
-  zipSize: "125 KB",
+  zipSize: "157 KB",
 };
 
 (() => {
