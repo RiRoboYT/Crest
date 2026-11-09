@@ -27,6 +27,14 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 | Presets | Classic, Glass, Album and Light. |
 | Real spectrum | Optional mode where the bars follow the actual sound. Off by default. |
 
+## Website
+
+`docs/index.html` is the Crest landing page: a single self-contained file with a live, interactive notch demo.
+
+* **Host it free with GitHub Pages:** on GitHub, open **Settings → Pages**, choose **Deploy from a branch**, pick your branch and the **`/docs`** folder.
+* **Make the Download button work:** publish a GitHub **Release** and attach the built `Crest.exe` as an asset. The button links to `releases/latest/download/Crest.exe`, so it always serves the newest release.
+* **Change links or version:** edit the `CONFIG` block at the top of the `<script>` in `docs/index.html`.
+
 ## Project layout
 
 ```
