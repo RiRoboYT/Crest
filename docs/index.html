@@ -872,6 +872,40 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 .toast svg { width: 18px; height: 18px; color: #3ddc84; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ===================== Gallery ===================== */
+.gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.shot { border-radius: var(--radius); border: 1px solid var(--line); background: var(--card); overflow: hidden; }
+.shot figcaption { padding: 14px 18px 16px; color: var(--sub); font-size: 14px; }
+.shot figcaption b { color: var(--text); font-weight: 600; display: block; margin-bottom: 2px; }
+.shot img { display: block; width: 100%; height: auto; }
+.shot .stage { padding: 0 20px 26px; background: radial-gradient(120% 90% at 50% 0%, #2a2350 0%, #12121c 60%, #0c0c12 100%); display: grid; justify-items: center; }
+.mock { width: min(100%, 420px); min-height: 150px; border-radius: 0 0 26px 26px; background: #000; padding: 10px 18px 14px; color: #fff; font-size: 12px; box-shadow: 0 18px 50px -14px var(--mg, #7b6cff); }
+.mock-head { display: flex; justify-content: space-between; align-items: center; color: #ffffff99; font-size: 11px; margin-bottom: 10px; }
+.mock-head .dots { display: flex; gap: 7px; }
+.mock-head .dots i { width: 9px; height: 9px; border-radius: 3px; background: var(--c); opacity: .55; }
+.mock-head .dots i.on { opacity: 1; outline: 4px solid color-mix(in srgb, var(--c) 25%, transparent); }
+.mock-cols { display: grid; grid-template-columns: 5fr 6fr; gap: 16px; }
+.mock h5 { margin: 0 0 7px; font: 600 10px var(--mono); letter-spacing: .08em; color: #ffffff80; }
+.mock .row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #ffffffb3; }
+.mock .row.on { color: #fff; font-weight: 600; }
+.mock .row .ck { width: 12px; color: #2dd4bf; }
+.mock .row .app { width: 16px; height: 16px; border-radius: 5px; background: var(--c); flex: none; }
+.mock .row .bar { flex: 1; height: 4px; border-radius: 2px; background: #ffffff33; position: relative; }
+.mock .row .bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v); border-radius: 2px; background: #fff; }
+.mock-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.mock-tiles div { border-radius: 12px; background: #ffffff1f; padding: 11px 4px 9px; text-align: center; font-size: 10px; font-weight: 600; }
+.mock-tiles div::before { content: ""; display: block; width: 14px; height: 14px; margin: 0 auto 6px; border-radius: 50%; background: var(--c); }
+.mock-tiles div.on { background: var(--c); }
+.mock-tiles div.on::before { background: #fff; }
+.mock .calc { border-radius: 10px; background: #ffffff1f; padding: 7px 10px; }
+.mock .big { font: 600 26px var(--display); margin: 6px 0 2px; }
+.mock .sub { color: #ffffff80; font-size: 11px; }
+.mock .swatches { display: flex; gap: 5px; margin: 8px 0; }
+.mock .swatches i { width: 18px; height: 18px; border-radius: 6px; background: var(--c); }
+.mock .chip { display: inline-block; border-radius: 8px; background: #ffffff1f; padding: 3px 9px; font-weight: 600; font-size: 11px; margin-right: 5px; }
+.mock .chip.on { background: #fff; color: #000; }
+@media (max-width: 860px) { .gallery-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 
@@ -906,6 +940,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
     <a href="#new" data-cursor="hover">What's new</a>
     <a href="#features" data-cursor="hover">Features</a>
     <a href="#story" data-cursor="hover">How it feels</a>
+    <a href="#gallery" data-cursor="hover">Gallery</a>
     <a href="#settings" data-cursor="hover">Settings</a>
     <a href="#faq" data-cursor="hover">FAQ</a>
   </nav>
@@ -1001,57 +1036,57 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow"><span class="dot"></span>New in <span class="js-version">1.2.0</span></span>
-      <h2 class="h2">Your whole desk,<br /><span class="grad-text shimmer">one notch away.</span></h2>
-      <p class="lead">Version 1.3 adds a sound mixer, quick controls, a focus timer, mic mute and a lot of polish — on top of lyrics, live activities, the file shelf and everything from 1.2.</p>
+      <h2 class="h2">Small touches,<br /><span class="grad-text shimmer">everywhere.</span></h2>
+      <p class="lead">Version 1.4 adds a tools page, a to-do list, download and rain alerts, a blurred cover behind the player and much more. <a href="changelog.html" data-cursor="hover" style="color:var(--cyan)">See every version →</a></p>
     </div>
     <div class="new-grid">
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#2dd4bf;--d:0.00s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></div>
-        <h3>Sound page</h3>
-        <p>Switch between speakers and headphones in one click, and give every app its own volume slider.</p>
-      </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#60a5fa;--d:0.06s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></div>
-        <h3>Quick controls</h3>
-        <p>Dark mode, Bluetooth, Wi-Fi, keep awake, pause pop-ups, mute mic and focus — one tap each.</p>
-      </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff453a;--d:0.12s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M3 3l18 18"/></svg></div>
-        <h3>Mic mute anywhere</h3>
-        <p>Win + Alt + M mutes your microphone in every app. A red mic in the notch reminds you it's off.</p>
-      </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff6b57;--d:0.18s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg></div>
-        <h3>Focus timer</h3>
-        <p>Work, break, repeat. The countdown rides in the side bubble and pop-ups stay quiet while you focus.</p>
-      </article>
       <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff5e7e;--d:0.00s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="7" height="7" rx="2"/><path d="M14 10h7M14 14h4"/></svg></div>
-        <h3>Cover in the notch</h3>
-        <p>A tiny album cover next to the bars, icons that morph, a clock that rolls — it feels alive.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="4"/><circle cx="9" cy="12" r="3"/><path d="M15 10h3M15 14h3"/></svg></div>
+        <h3>Blurred cover</h3>
+        <p>The open player sits on a soft, blurred copy of the album art. A thin line in the closed notch shows how far the song is.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ffd60a;--d:0.06s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#a3e635;--d:0.06s">
         <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></div>
-        <h3>Screenshots on the shelf</h3>
-        <p>Every new screenshot waits on the shelf, ready to drag into a chat. Copied images too.</p>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/></svg></div>
+        <h3>Tools page</h3>
+        <p>Type 12*7+5 or 5 km in miles for an instant answer, pick any color on screen, and keep a countdown to your big day.</p>
       </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#c084fc;--d:0.12s">
-        <span class="badge">NEW</span>
-        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 11v2"/></svg></div>
-        <h3>Four visualizer styles</h3>
-        <p>Mirrored bars, classic bars, bouncing dots or a flowing wave — plus four new color presets.</p>
-      </article>
-      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#34d399;--d:0.18s">
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#0a84ff;--d:0.12s">
         <span class="badge">NEW</span>
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
-        <h3>Lock keys, battery & more</h3>
-        <p>Caps Lock pop-ups, low-battery alerts, internet speed, lyrics timing, settings backup and a welcome tour.</p>
+        <h3>Download alerts</h3>
+        <p>A bubble shows your download growing, a pop-up says when it is done, and the file is waiting on the shelf.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#f472b6;--d:0.18s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h8"/><path d="m16 17 2 2 4-4"/></svg></div>
+        <h3>To-do list</h3>
+        <p>A checklist right next to your quick note. Click to tick off, right-click to remove.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#5ac8fa;--d:0.00s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M7 16a4 4 0 0 1 .5-8 5 5 0 0 1 9.6 1.3A3.5 3.5 0 0 1 17 16z"/><path d="M9 19v2M13 19v2M17 19v2"/></svg></div>
+        <h3>Rain &amp; battery alerts</h3>
+        <p>A heads-up before it rains, and a warning when your mouse, keyboard or headphones run low.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ff6b57;--d:0.06s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg></div>
+        <h3>Join meetings</h3>
+        <p>When a calendar event has a Teams, Zoom or Meet link, the reminder has a Join button.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#ffd60a;--d:0.12s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9.3l-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.5-.8z"/></svg></div>
+        <h3>Pins &amp; favourites</h3>
+        <p>Pin apps, files and folders to the shelf, and pin the texts you paste again and again.</p>
+      </article>
+      <article class="card new-card reveal tilt" data-cursor="hover" style="--c:#c084fc;--d:0.18s">
+        <span class="badge">NEW</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div>
+        <h3>Polish</h3>
+        <p>A sleeping-cat idle buddy, night dimming, keyboard control, focus stats, and it hides itself during presentations.</p>
       </article>
     </div>
   </div>
@@ -1242,6 +1277,66 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 </section>
 
 <!-- ============================== DOWNLOAD ============================== -->
+<section class="section" id="gallery">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Gallery</span>
+      <h2 class="h2">A look <span class="grad-text shimmer">inside.</span></h2>
+      <p class="lead" id="galleryLead">Four of the eleven pages in the open notch, drawn as previews.</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid">
+      <figure class="shot reveal">
+        <div class="stage"><div class="mock" style="--mg:#2dd4bf">
+          <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i style="--c:#34d399"></i><i class="on" style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
+          <div class="mock-cols">
+            <div><h5>OUTPUT</h5>
+              <div class="row on"><span class="ck">✓</span>Headphones</div>
+              <div class="row"><span class="ck"></span>Speakers</div>
+              <div class="row"><span class="ck"></span>Monitor</div></div>
+            <div><h5>APPS</h5>
+              <div class="row"><span class="app" style="--c:#1ed760"></span><span class="bar" style="--v:78%"></span></div>
+              <div class="row"><span class="app" style="--c:#5865f2"></span><span class="bar" style="--v:45%"></span></div>
+              <div class="row"><span class="app" style="--c:#fbbc05"></span><span class="bar" style="--v:60%"></span></div></div>
+          </div>
+        </div></div>
+        <figcaption><b>Sound</b>Switch speakers and headphones, and set each app's volume.</figcaption>
+      </figure>
+      <figure class="shot reveal">
+        <div class="stage"><div class="mock" style="--mg:#60a5fa">
+          <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i style="--c:#34d399"></i><i style="--c:#2dd4bf"></i><i class="on" style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
+          <div class="mock-tiles">
+            <div class="on" style="--c:#8b5cf6">Dark mode</div><div class="on" style="--c:#3b82f6">Bluetooth</div><div class="on" style="--c:#0ea5e9">Wi-Fi</div><div style="--c:#f59e0b">Keep awake</div>
+            <div style="--c:#f43f5e">Pause pop-ups</div><div style="--c:#ef4444">Mute mic</div><div class="on" style="--c:#ff6b57">Focus</div><div style="--c:#fbbf24">Night light</div>
+          </div>
+        </div></div>
+        <figcaption><b>Controls</b>The switches you reach for most, one tap each.</figcaption>
+      </figure>
+      <figure class="shot reveal">
+        <div class="stage"><div class="mock" style="--mg:#a3e635">
+          <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#34d399"></i><i style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i><i class="on" style="--c:#a3e635"></i></span><b>9:41 PM</b></div>
+          <div class="mock-cols" style="grid-template-columns:1fr 130px">
+            <div><div class="calc">5 km in miles</div><div class="big">= 3.1069 mi</div><div class="sub">Enter copies the answer.</div></div>
+            <div><span class="chip">Pick a color</span>
+              <div class="swatches"><i style="--c:#7b6cff"></i><i style="--c:#ff5e7e"></i><i style="--c:#2dd4bf"></i><i style="--c:#ffd60a"></i></div>
+              <b style="font-size:14px">45 days</b><div class="sub">until the holidays</div></div>
+          </div>
+        </div></div>
+        <figcaption><b>Tools</b>Calculator and unit converter, a screen color picker, and a countdown.</figcaption>
+      </figure>
+      <figure class="shot reveal">
+        <div class="stage"><div class="mock" style="--mg:#ff6b57">
+          <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i class="on" style="--c:#ff9f0a"></i><i style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
+          <span class="chip">Timer</span><span class="chip">Stopwatch</span><span class="chip on">Focus</span>
+          <div class="big" style="font-size:34px">18:24</div>
+          <div style="color:#ff6b57;font-weight:600">Focus · round 2 · 5 min break next</div>
+          <div class="sub">Today 50 min · 7 days 4 h 10 min · 3-day streak</div>
+        </div></div>
+        <figcaption><b>Focus timer</b>Work, break, repeat, with your stats underneath.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <section class="section download" id="download">
   <div class="wrap">
     <div class="dl-card reveal">
@@ -1308,6 +1403,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
       <div class="foot-links">
         <a href="#features" data-cursor="hover">Features</a>
         <a href="#download" data-cursor="hover">Download</a>
+        <a href="changelog.html" data-cursor="hover">Changelog</a>
         <a class="js-repo" href="#" target="_blank" rel="noopener" data-cursor="hover">GitHub</a>
       </div>
       <span style="color:var(--faint);font-size:13px">Made for Windows. Not affiliated with Apple or Microsoft.</span>
@@ -1323,7 +1419,11 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
    CONFIG — change these to point at your own GitHub release
    ===================================================================== */
 const CONFIG = {
-  version: "1.3.0",
+  version: "1.4.0",
+  // Real screenshots: put image files in docs/screenshots/ and list them here, e.g.
+  //   screenshots: [{ file: "player.png", caption: "The player" }, { file: "sound.png", caption: "Sound page" }]
+  // While this list is empty the gallery shows drawn previews instead.
+  screenshots: [],
   repoUrl: "https://github.com/RiRoboYT/Crest",
   // The project zip is hosted with the site (docs/downloads/Crest.zip), so the button downloads it directly.
   downloadUrl: "downloads/Crest.zip",
@@ -1344,6 +1444,22 @@ const CONFIG = {
   $$(".js-releases").forEach(a => a.href = CONFIG.repoUrl + "/releases");
   $("#dlButton").href = CONFIG.downloadUrl;
   $$(".js-zipsize").forEach(el => el.textContent = CONFIG.zipSize);
+  if (Array.isArray(CONFIG.screenshots) && CONFIG.screenshots.length) {
+    const grid = $("#galleryGrid");
+    grid.replaceChildren(...CONFIG.screenshots.map(shot => {
+      const fig = document.createElement("figure");
+      fig.className = "shot";
+      const img = document.createElement("img");
+      img.src = "screenshots/" + shot.file;
+      img.alt = shot.caption || "Crest screenshot";
+      img.loading = "lazy";
+      const cap = document.createElement("figcaption");
+      cap.textContent = shot.caption || "";
+      fig.append(img, cap);
+      return fig;
+    }));
+    $("#galleryLead").textContent = "Screenshots of Crest running on Windows.";
+  }
   $("#dlButton").addEventListener("click", () => toast("Crest.zip is downloading — unzip it and follow the steps below."));
 
   // ---------- time ----------

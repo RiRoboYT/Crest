@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crest changelog</title>
+<meta name="description" content="What changed in each version of Crest, the notch for Windows." />
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #07070a; --card: #111118; --line: #22222d; --text: #f4f4f8; --sub: #a0a0b0; --faint: #62626f;
+  --violet: #7b6cff; --cyan: #4fc3ff;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font);
+  background-image: radial-gradient(900px 500px at 15% -10%, #2a235066, transparent 70%), radial-gradient(700px 420px at 100% 0%, #0f3b5566, transparent 70%); background-repeat: no-repeat; }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { width: min(820px, 100% - 32px); margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 26px 0; }
+.brand { font: 700 20px var(--display); color: var(--text); display: flex; align-items: center; gap: 10px; }
+.brand i { width: 26px; height: 12px; border-radius: 0 0 8px 8px; background: linear-gradient(120deg, var(--violet), var(--cyan)); display: block; }
+h1 { font: 700 clamp(36px, 7vw, 60px)/1.05 var(--display); letter-spacing: -.02em; margin: 34px 0 10px; text-wrap: balance; }
+h1 span { background: linear-gradient(120deg, var(--violet), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { color: var(--sub); font-size: 18px; margin: 0 0 44px; max-width: 56ch; }
+.release { position: relative; padding: 0 0 46px 34px; border-left: 1px solid var(--line); }
+.release::before { content: ""; position: absolute; left: -6px; top: 8px; width: 11px; height: 11px; border-radius: 50%; background: var(--c, var(--violet)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--c, var(--violet)) 22%, transparent); }
+.release:last-of-type { border-left-color: transparent; }
+.release h2 { font: 700 26px var(--display); margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+.tag { font: 500 12px var(--mono); color: var(--sub); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.tag.new { color: #07070a; background: linear-gradient(120deg, var(--violet), var(--cyan)); border: 0; }
+.release p { color: var(--sub); margin: 8px 0 14px; }
+.release ul { margin: 0; padding: 18px 22px 18px 38px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.release li { margin: 5px 0; }
+.release li b { font-weight: 600; }
+footer { color: var(--faint); font-size: 13px; padding: 10px 0 60px; }
+@media (max-width: 520px) { .release { padding-left: 24px; } .release ul { padding-left: 30px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><i></i>Crest</a>
+    <a href="index.html#download">Download</a>
+  </header>
+
+  <h1>What changed, <span>version by version.</span></h1>
+  <p class="lead">Crest is a small notch for the top of your Windows screen. Here is everything that has been added since the first version.</p>
+
+  <section class="release" style="--c:#a3e635">
+    <h2>1.4 <span class="tag new">latest</span></h2>
+    <p>Small touches everywhere, and a fix for the volume.</p>
+    <ul>
+      <li><b>Fixed:</b> scrolling on the notch now shows the volume, and pop-ups also appear while the notch is open.</li>
+      <li><b>Tools page:</b> calculator and unit converter, screen color picker, countdown.</li>
+      <li><b>To-do list</b> next to the quick note.</li>
+      <li><b>Download alerts:</b> progress bubble, a pop-up when it is done, and the file lands on the shelf.</li>
+      <li><b>Rain alert</b> and <b>low-battery alerts</b> for Bluetooth devices.</li>
+      <li><b>Join button</b> for Teams, Zoom, Meet and Webex meetings.</li>
+      <li><b>Pins:</b> favourite apps and files on the shelf, and pinned clipboard texts.</li>
+      <li><b>Look:</b> blurred cover behind the player, song progress line, idle buddy, night dimming.</li>
+      <li><b>Focus stats,</b> keyboard control, hiding during presentations, lower memory use while idle.</li>
+    </ul>
+  </section>
+
+  <section class="release" style="--c:#2dd4bf">
+    <h2>1.3</h2>
+    <p>Your whole desk, one notch away.</p>
+    <ul>
+      <li><b>Sound page:</b> switch speakers or headphones, and a volume slider for every app.</li>
+      <li><b>Controls page:</b> dark mode, Bluetooth, Wi-Fi, keep awake, pause pop-ups, mute mic, focus.</li>
+      <li><b>Mic mute</b> in every app with Win + Alt + M.</li>
+      <li><b>Focus timer</b> with work and break rounds.</li>
+      <li><b>Album cover</b> in the closed notch, smoother icon and clock animations.</li>
+      <li><b>Screenshots</b> go to the shelf, and copied images show in the clipboard list.</li>
+      <li><b>Four visualizer styles</b> and four new color presets.</li>
+      <li>Caps Lock and battery pop-ups, internet speed, lyrics timing buttons, settings backup, welcome tour.</li>
+      <li>Colored icons in the notch and in Settings.</li>
+    </ul>
+  </section>
+
+  <section class="release" style="--c:#ff5fa2">
+    <h2>1.2</h2>
+    <p>Way more than a music notch.</p>
+    <ul>
+      <li><b>Synced lyrics</b> from LRCLIB.</li>
+      <li><b>Live activities:</b> charger, headphones, meetings, timer done.</li>
+      <li><b>Pages:</b> Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes.</li>
+      <li><b>File shelf:</b> drag files in, drag them out later.</li>
+      <li><b>Split island</b> for a running timer, and privacy dots for camera and microphone.</li>
+      <li><b>Ambient glow</b> in the cover's colors that pulses with the music.</li>
+      <li>Gestures, a notch on every monitor, per-app rules.</li>
+    </ul>
+  </section>
+
+  <section class="release" style="--c:#7b6cff">
+    <h2>1.1</h2>
+    <p>The big polish pass.</p>
+    <ul>
+      <li>Completely new settings app with dark and light themes and a live preview.</li>
+      <li>Follows the app that is actually playing; click the song to open it.</li>
+      <li>Real volume slider, scrolling titles, song-change peek.</li>
+      <li>Colors from album art, theme presets, optional real spectrum.</li>
+      <li>Sharp on every screen scale, and a choice of monitor.</li>
+    </ul>
+  </section>
+
+  <section class="release" style="--c:#4fc3ff">
+    <h2>1.0</h2>
+    <p>The first version.</p>
+    <ul>
+      <li>A notch at the top of the screen with the time and spectrum bars.</li>
+      <li>Hover to open: title, artist, progress, previous / play / next.</li>
+      <li>Settings window, tray icon, start with Windows.</li>
+    </ul>
+  </section>
+
+  <footer>Made for Windows. Not affiliated with Apple or Microsoft. <a href="index.html">Back to the site</a></footer>
+</div>
+</body>
+</html>

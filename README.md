@@ -10,6 +10,27 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 * **Tray icon:** left-click opens Settings. Right-click gives Settings, Show notch, Start with Windows and Exit.
 * **Topmost:** the notch stays on top, including over fullscreen video and borderless-fullscreen games.
 
+## What's new in 1.4
+
+| Area | Change | Where in Settings |
+|---|---|---|
+| Fix | Scrolling on the notch now shows the volume: a line in the open notch's header, plus a percentage next to the slider. Other pop-ups show there too while the notch is open. | – |
+| Look | Blurred album cover behind the open player; idle buddy (sleeping cat or breathing dot). | Appearance → Effects |
+| Night dimming | The closed notch dims between the hours you choose. | Appearance → Night dimming |
+| Progress line | A thin line in the closed notch that fills as the song plays. | Media → Now playing |
+| Downloads | Progress bubble while a browser downloads, a pop-up when it's done, and the file lands on the shelf. | Activities → Pop-ups, Widgets → Shelf |
+| Rain alert | "Rain on the way" from Open-Meteo's 15-minute forecast. | Activities → Pop-ups |
+| Device batteries | Low-battery pop-up for Bluetooth devices; levels listed on the System page. | Activities → Pop-ups |
+| Meetings | Join button for Teams / Zoom / Meet / Webex links. | Activities → Calendar |
+| To-do | A checklist next to the quick note. | Widgets → Notes & to-do |
+| Tools page | Calculator and unit converter, screen color picker, countdown. | Widgets → Pages, Countdown |
+| Favourites | Right-click a shelf item to pin it; pinned items open with one click. | Widgets → Shelf |
+| Pinned copies | Right-click a copied text to pin it. | Widgets → Clipboard |
+| Focus stats | Today, last 7 days and streak. | Widgets → Timer & focus |
+| Presentations | Hides during a PowerPoint slideshow / Windows presentation mode. | Activities → Privacy & quiet |
+| Memory | Hands unused memory back to Windows while idle. | Behavior → General |
+| Keyboard | After Win + Alt + N: arrows, Space, M and Esc drive the notch. | Behavior → Gestures |
+
 ## What's new in 1.3
 
 | Area | Change | Where in Settings |
@@ -88,7 +109,9 @@ Crest/
 ├── MainWindow.Activities.cs             ← pop-ups, volume/brightness indicator, timer bubble, privacy dots
 ├── MainWindow.Glow.cs                   ← ambient album glow: colors, breathing, beat pulse, click-through
 ├── MainWindow.Extras.cs                 ← 1.3: cover in the closed notch, Sound & Controls pages, mic / lock keys / battery pop-ups, smooth transitions, hide while typing
+├── MainWindow.V14.cs                    ← 1.4: header toast, backdrop, progress line, idle buddy, to-do, Tools page, downloads, keyboard control
 ├── TourWindow.cs                        ← first-run welcome tour
+├── ColorPickerWindow.cs                 ← screen color picker (Tools page)
 ├── MainWindow.Input.cs                  ← gestures, hotkey, drag & drop, typing
 ├── SettingsWindow.xaml / .cs            ← settings UI with live preview
 ├── Themes/SettingsStyles.xaml           ← dark/light control styles for the settings window
@@ -115,6 +138,7 @@ Crest/
 │   ├── AudioDevicesService.cs           ← output device switching + per-app volume
 │   ├── KeyboardHookService.cs           ← Caps / Num Lock + "hide while typing" (key down/up only)
 │   ├── NetworkSpeedService.cs, QuickTogglesService.cs
+│   ├── ProductivityServices.cs          ← to-do list, focus stats, download watcher
 │   ├── CrestServices.cs                 ← creates all shared services
 │   ├── SettingsManager.cs               ← JSON load/save (debounced)
 │   ├── StartupManager.cs                ← "Start with Windows" (HKCU Run key)
@@ -172,4 +196,8 @@ Settings are saved to `settings.json` next to `Crest.exe`. If that folder isn't 
 * **Controls page:** Bluetooth and Wi-Fi switches may ask Windows for permission the first time. Night light has no public switch, so its tile opens the Night light page in Settings. "Pause pop-ups" is Crest's own do-not-disturb – Windows' Focus / Do Not Disturb can't be switched by other apps.
 * **Caps Lock and "hide while typing":** these use a low-level keyboard hook that only notices that a key went down. Nothing you type is read, stored or sent. The hook only runs while one of those two options is on.
 * **Shuffle / repeat:** only works when the playing app allows it from outside (Spotify does; many web players don't – the buttons are greyed out then).
+* **Windows notifications (WhatsApp, Discord…):** not shown. Windows only lets apps installed as a signed app package read other apps' notifications; Crest is a plain .exe. Crest's own pop-ups do show in the notch, including while it is open.
+* **Downloads:** recognised by the temporary files browsers write in your Downloads folder (Chrome, Edge, Brave, Opera, Firefox). The total size isn't known from outside, so the bubble shows how much has arrived, not a percentage.
+* **Presentations:** PowerPoint slideshows and Windows presentation mode are detected. Windows gives no signal for Zoom / Teams screen sharing; add those apps under Per-app rules.
+* **Device batteries:** only Bluetooth devices that report a level to Windows (the same ones that show a percentage in Windows' Bluetooth settings).
 * **Memory:** WPF's baseline working set is usually about 40–60 MB.
