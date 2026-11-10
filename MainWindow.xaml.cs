@@ -167,6 +167,7 @@ namespace Crest
             InitGlow();
             InitActivities();
             InitExtras();
+            InitV14();
             InitInput();
 
             SourceInitialized += OnSourceInitialized;
@@ -321,7 +322,8 @@ namespace Crest
 
             _quiet = rule?.Action == RuleAction.NoPopups || (_settings.QuietInFullscreen && fullscreenHere);
 
-            bool hide = rule?.Action == RuleAction.HideNotch;
+            // Also step aside during a slideshow / Windows presentation mode.
+            bool hide = rule?.Action == RuleAction.HideNotch || (_settings.HideDuringPresentations && fg.IsPresenting);
             if (hide != _hiddenByRule)
             {
                 _hiddenByRule = hide;
@@ -433,6 +435,7 @@ namespace Crest
             ApplyPagesSettings();
             ApplyActivitySettings();
             ApplyExtrasSettings();
+            ApplyV14Settings();
             ApplyRules();
 
             UpdateWindowBounds();
@@ -580,6 +583,7 @@ namespace Crest
             UpdateCollapsedContent();
             UpdateCollapsedArt(animate, resize: false);
             UpdateNetUsage(resize: false);
+            UpdateIdleBuddy(resize: false);
 
             // Collapsed: bars slide open / closed and fade.
             Animate(CollapsedBarsHost, WidthProperty, _showPlaying ? BarsWidth : 0, ms, ease);
@@ -666,6 +670,13 @@ namespace Crest
             UpdateBubble(animate);
             UpdateGlow(animate);
             UpdateSoundRefresh();
+            UpdateCoverBackdrop(animate);
+            UpdateNightDim(animate);
+            if (target != NotchState.Expanded)
+            {
+                HideHeaderToast(animate: false);
+                LeaveKeyboardMode();
+            }
         }
 
         private void ShowHost(FrameworkElement host, bool show, NotchState owner, int ms)
@@ -767,6 +778,8 @@ namespace Crest
             }
             if (ExpandedTime.Text != time) ExpandedTime.Text = time;
 
+            UpdateNightDim(animate: true);
+
             string date = now.ToString("ddd, MMM d", CultureInfo.CurrentCulture);
             if (DateText.Text != date) DateText.Text = date;
 
@@ -854,6 +867,7 @@ namespace Crest
 
         private void UpdateProgress()
         {
+            UpdateProgressLine();   // the thin line in the closed notch
             // Only visible when expanded on the Music page → skip the work otherwise.
             if (_state != NotchState.Expanded || !_settings.ShowProgress || _currentPage != "Music") return;
 
@@ -934,6 +948,7 @@ namespace Crest
         private void UpdateVolumeUi()
         {
             VolumePanel.Visibility = _settings.ShowVolumeIcon ? Visibility.Visible : Visibility.Collapsed;
+            UpdateVolumePercent();
 
             bool available = Volume.IsAvailable;
             VolumeSlider.IsEnabled = available;
@@ -998,6 +1013,7 @@ namespace Crest
             ClosePages();
             CloseActivities();
             CloseExtras();
+            CloseV14();
 
             foreach (var unsubscribe in _unsubscribe)
             {

@@ -23,6 +23,53 @@ namespace Crest.Services
 
         public IReadOnlyList<string> Files => _files;
 
+        // ---------------------------------------------------------------- pins (favourite apps, files, folders)
+        private readonly string _pinsPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Crest", "shelf-pins.json");
+        private HashSet<string>? _pins;
+
+        private HashSet<string> Pins
+        {
+            get
+            {
+                if (_pins != null) return _pins;
+                _pins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                try
+                {
+                    if (File.Exists(_pinsPath))
+                        foreach (var p in JsonSerializer.Deserialize<List<string>>(File.ReadAllText(_pinsPath)) ?? new List<string>())
+                            _pins.Add(p);
+                }
+                catch (Exception ex)
+                {
+                    App.LogError("Loading shelf pins failed", ex);
+                }
+                return _pins;
+            }
+        }
+
+        /// <summary>Pinned items stay on the shelf (first in line) and survive "Clear all".</summary>
+        public bool IsPinned(string path) => Pins.Contains(path);
+
+        public void TogglePin(string path)
+        {
+            if (!Pins.Remove(path)) Pins.Add(path);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_pinsPath)!);
+                File.WriteAllText(_pinsPath, JsonSerializer.Serialize(Pins.ToList()));
+            }
+            catch (Exception ex)
+            {
+                App.LogError("Saving shelf pins failed", ex);
+            }
+            // Pinned first, otherwise keep the order.
+            var ordered = _files.OrderBy(f => IsPinned(f) ? 0 : 1).ToList();
+            _files.Clear();
+            _files.AddRange(ordered);
+            Save();
+        }
+
         private FileSystemWatcher? _screenshots;
 
         /// <summary>Puts every new screenshot (Win + PrtScn, Snipping Tool…) on the shelf.</summary>
@@ -123,7 +170,7 @@ namespace Crest.Services
         public void Clear()
         {
             if (_files.Count == 0) return;
-            _files.Clear();
+            _files.RemoveAll(f => !IsPinned(f));   // favourites stay
             Save();
         }
 

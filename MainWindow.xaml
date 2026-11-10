@@ -25,7 +25,7 @@
           CollapsedHost – privacy dots + time (or lyric line) + spectrum
           PeekHost      – small art + title (a new song started)
           ActivityHost  – charging, headphones, calendar, timer done, volume / brightness
-          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes, Sound, Controls
+          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes, Sound, Controls, Tools
         Next to the notch: Bubble – a running timer / stopwatch (split island).
     -->
     <Window.Resources>
@@ -127,7 +127,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Width" Value="23" />
+            <Setter Property="Width" Value="22" />
             <Setter Property="Height" Value="22" />
             <Setter Property="Opacity" Value="0.6" />
             <Setter Property="Focusable" Value="False" />
@@ -357,6 +357,16 @@
 
                     <Grid x:Name="ContentRoot" ClipToBounds="True">
 
+                        <!-- Blurred album cover behind the open player (Appearance → Effects) -->
+                        <Border x:Name="CoverBackdrop" Margin="26" CornerRadius="24" Opacity="0" IsHitTestVisible="False">
+                            <Border.Background>
+                                <ImageBrush x:Name="CoverBackdropBrush" Stretch="UniformToFill" />
+                            </Border.Background>
+                            <Border.Effect>
+                                <BlurEffect Radius="34" KernelType="Gaussian" RenderingBias="Performance" />
+                            </Border.Effect>
+                        </Border>
+
                         <!-- ======================= COLLAPSED ======================= -->
                         <Grid x:Name="CollapsedHost" HorizontalAlignment="Center" VerticalAlignment="Top" Width="220" Height="36">
                             <Grid Margin="14,0,16,0">
@@ -409,6 +419,10 @@
                                 <TextBlock x:Name="CollapsedNet" Grid.Column="2" Style="{StaticResource SubText}" FontWeight="SemiBold"
                                            VerticalAlignment="Center" Margin="10,0,0,0" Visibility="Collapsed" Text="↓ 0 KB/s" />
 
+                                <!-- Idle buddy: a sleeping cat or a breathing dot while nothing plays (built in code) -->
+                                <Canvas x:Name="IdleBuddy" Grid.Column="2" Width="26" Height="16" Margin="8,0,0,0"
+                                        VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False" />
+
                                 <Border x:Name="CollapsedBarsHost" Grid.Column="2"
                                         Width="0" Opacity="0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                         ClipToBounds="True" IsHitTestVisible="False">
@@ -416,6 +430,16 @@
                                                 VerticalAlignment="Center" Margin="10,0,0,0" IsHitTestVisible="False" />
                                 </Border>
                             </Grid>
+
+                            <!-- Thin song-progress line along the bottom of the closed notch -->
+                            <Border x:Name="CollapsedProgress" Height="2" CornerRadius="1" VerticalAlignment="Bottom" Margin="16,0,16,3"
+                                    Background="{DynamicResource TrackBrush}" Visibility="Collapsed" IsHitTestVisible="False">
+                                <Border CornerRadius="1" Background="{DynamicResource AccentBrush}" RenderTransformOrigin="0,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="CollapsedProgressScale" ScaleX="0" ScaleY="1" />
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
                         </Grid>
 
                         <!-- ======================= PEEK (song changed) ======================= -->
@@ -521,9 +545,10 @@
                                         <Button x:Name="TabNotes" Style="{StaticResource TabButton}" Tag="Notes" ToolTip="Notes" Content="&#xE70B;" Foreground="#F472B6" Click="Tab_Click" />
                                         <Button x:Name="TabSound" Style="{StaticResource TabButton}" Tag="Sound" ToolTip="Sound: outputs &amp; app volume" Content="&#xE7F5;" Foreground="#2DD4BF" Click="Tab_Click" />
                                         <Button x:Name="TabControls" Style="{StaticResource TabButton}" Tag="Controls" ToolTip="Quick controls" Content="&#xE9E9;" Foreground="#60A5FA" Click="Tab_Click" />
+                                        <Button x:Name="TabTools" Style="{StaticResource TabButton}" Tag="Tools" ToolTip="Tools: calculator, color picker, countdown" Content="&#xE8EF;" Foreground="#A3E635" Click="Tab_Click" />
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <StackPanel x:Name="HeaderRight" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                         <StackPanel x:Name="ExpandedPrivacyDots" Orientation="Horizontal" VerticalAlignment="Center"
                                                     Margin="0,0,6,0" Visibility="Collapsed">
                                             <Ellipse x:Name="ExpCamDot" Width="6" Height="6" Fill="#3DDC84" Margin="0,0,3,0" />
@@ -534,6 +559,27 @@
                                                    ToolTip="Microphone muted (Win + Alt + M)" />
                                         <TextBlock x:Name="ExpandedTime" Style="{StaticResource NotchText}" FontSize="{DynamicResource FontSmall}"
                                                    FontWeight="SemiBold" VerticalAlignment="Center" Text="12:00 PM" />
+                                    </StackPanel>
+
+                                    <!-- Volume / pop-ups while the notch is open: replaces the header for a moment -->
+                                    <StackPanel x:Name="HeaderToast" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" Visibility="Collapsed" Opacity="0" IsHitTestVisible="False">
+                                        <Border x:Name="HeaderToastIconBg" Width="20" Height="20" CornerRadius="10" Background="#7B6CFF" VerticalAlignment="Center">
+                                            <TextBlock x:Name="HeaderToastIcon" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" Text="&#xE995;" />
+                                        </Border>
+                                        <TextBlock x:Name="HeaderToastText" Style="{StaticResource NotchText}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0" MaxWidth="230" TextTrimming="CharacterEllipsis" />
+                                        <Grid x:Name="HeaderToastLevel" Width="72" Height="4" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <Border CornerRadius="2" Background="{DynamicResource TrackBrush}" />
+                                            <Border CornerRadius="2" Background="{DynamicResource AccentBrush}" RenderTransformOrigin="0,0.5">
+                                                <Border.RenderTransform>
+                                                    <ScaleTransform x:Name="HeaderToastScale" ScaleX="0" ScaleY="1" />
+                                                </Border.RenderTransform>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock x:Name="HeaderToastValue" Style="{StaticResource NotchText}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0" />
                                     </StackPanel>
                                 </Grid>
 
@@ -618,11 +664,14 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="VolumePercent" Grid.Column="2" Style="{StaticResource SubText}" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" Margin="5,0,0,0" MinWidth="26" Text="50%" />
                                                 <Button x:Name="VolumeButton" Style="{StaticResource MediaButton}" Width="30" Height="30" FontSize="14"
                                                         ToolTip="Mute / unmute" Click="VolumeButton_Click" Content="&#xE995;" />
                                                 <Slider x:Name="VolumeSlider" Grid.Column="1" Style="{StaticResource NotchSlider}"
-                                                        Minimum="0" Maximum="100" SmallChange="2" LargeChange="10" MaxWidth="96"
+                                                        Minimum="0" Maximum="100" SmallChange="2" LargeChange="10" MaxWidth="80"
                                                         HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="4,0,0,0"
                                                         ValueChanged="VolumeSlider_ValueChanged" />
                                             </Grid>
@@ -773,7 +822,11 @@
                                                 </Grid>
                                             </StackPanel>
                                         </UniformGrid>
-                                        <TextBlock x:Name="SystemFooter" Grid.Row="1" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Grid.Row="1">
+                                            <TextBlock x:Name="DevicesFooter" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis"
+                                                       Visibility="Collapsed" Margin="0,0,0,1" />
+                                            <TextBlock x:Name="SystemFooter" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
                                     </Grid>
 
                                     <!-- ===== Timer ===== -->
@@ -791,6 +844,7 @@
                                             <TextBlock x:Name="TimerBig" Style="{StaticResource NotchText}" FontFamily="Segoe UI Variable Display, Segoe UI"
                                                        FontSize="34" FontWeight="SemiBold" Text="05:00" Margin="0,2,0,0" />
                                             <TextBlock x:Name="TimerSub" Style="{StaticResource SubText}" FontWeight="SemiBold" Visibility="Collapsed" Text="Focus · round 1" />
+                                            <TextBlock x:Name="FocusStatsText" Style="{StaticResource SubText}" Visibility="Collapsed" Margin="0,1,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <WrapPanel x:Name="TimerPresets" Width="150" HorizontalAlignment="Right">
@@ -838,7 +892,14 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <Border CornerRadius="10" Background="{DynamicResource HoverBrush}" Padding="8,6">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,1">
+                                                <Button x:Name="NotesModeNote" Style="{StaticResource ChipButton}" Content="Note" Tag="Note" Click="NotesMode_Click" />
+                                                <Button x:Name="NotesModeTodo" Style="{StaticResource ChipButton}" Content="To-do" Tag="Todo" Click="NotesMode_Click" />
+                                                <TextBlock x:Name="TodoCount" Style="{StaticResource SubText}" VerticalAlignment="Center" Margin="4,0,0,5" />
+                                            </StackPanel>
+                                            <Grid>
+                                        <Border x:Name="NotePanel" CornerRadius="10" Background="{DynamicResource HoverBrush}" Padding="8,6">
                                             <Grid>
                                                 <TextBlock x:Name="NotesPlaceholder" Style="{StaticResource SubText}" Text="Quick note…" Margin="2,1,0,0" />
                                                 <TextBox x:Name="NotesBox" Background="Transparent" BorderThickness="0"
@@ -850,6 +911,23 @@
                                                          TextChanged="NotesBox_TextChanged" />
                                             </Grid>
                                         </Border>
+                                        <DockPanel x:Name="TodoPanel" Visibility="Collapsed">
+                                            <Border DockPanel.Dock="Top" CornerRadius="8" Background="{DynamicResource HoverBrush}" Padding="8,3" Margin="0,0,0,4">
+                                                <Grid>
+                                                    <TextBlock x:Name="TodoPlaceholder" Style="{StaticResource SubText}" Text="Add a task, press Enter…" Margin="2,1,0,0" />
+                                                    <TextBox x:Name="TodoBox" Background="Transparent" BorderThickness="0"
+                                                             Foreground="{DynamicResource TextBrush}" CaretBrush="{DynamicResource TextBrush}"
+                                                             FontFamily="{DynamicResource TextFont}" FontSize="{DynamicResource FontSmall}"
+                                                             PreviewMouseLeftButtonDown="TypingBox_PreviewMouseLeftButtonDown"
+                                                             PreviewKeyDown="TodoBox_PreviewKeyDown" TextChanged="TodoBox_TextChanged" />
+                                                </Grid>
+                                            </Border>
+                                            <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                                <StackPanel x:Name="TodoList" />
+                                            </ScrollViewer>
+                                        </DockPanel>
+                                            </Grid>
+                                        </DockPanel>
                                         <StackPanel x:Name="ClipboardPanel" Grid.Column="1" Width="140" Margin="10,0,0,0" Visibility="Collapsed">
                                             <TextBlock Style="{StaticResource SubText}" FontWeight="SemiBold" Text="RECENT COPIES" Margin="2,0,0,4" />
                                             <StackPanel x:Name="ClipboardList" />
@@ -874,6 +952,39 @@
                                                 <StackPanel x:Name="MixerList" />
                                             </ScrollViewer>
                                         </DockPanel>
+                                    </Grid>
+
+                                    <!-- ===== Tools: calculator · color picker · countdown ===== -->
+                                    <Grid x:Name="PageTools" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="150" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <Border CornerRadius="10" Background="{DynamicResource HoverBrush}" Padding="9,6">
+                                                <Grid>
+                                                    <TextBlock x:Name="CalcPlaceholder" Style="{StaticResource SubText}" Text="12*7+5   ·   5 km in miles" Margin="2,1,0,0" />
+                                                    <TextBox x:Name="CalcBox" Background="Transparent" BorderThickness="0"
+                                                             Foreground="{DynamicResource TextBrush}" CaretBrush="{DynamicResource TextBrush}"
+                                                             FontFamily="{DynamicResource TextFont}" FontSize="{DynamicResource FontBase}"
+                                                             PreviewMouseLeftButtonDown="TypingBox_PreviewMouseLeftButtonDown"
+                                                             PreviewKeyDown="CalcBox_PreviewKeyDown" TextChanged="CalcBox_TextChanged" />
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock x:Name="CalcResult" Style="{StaticResource NotchText}" FontFamily="Segoe UI Variable Display, Segoe UI"
+                                                       FontSize="26" FontWeight="SemiBold" Margin="2,6,0,0" TextTrimming="CharacterEllipsis" Text="=" />
+                                            <TextBlock x:Name="CalcHint" Style="{StaticResource SubText}" Margin="2,0,0,0" Text="Type a sum or a conversion. Enter copies the answer." />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button x:Name="PickColorButton" Style="{StaticResource ChipButton}" Content="Pick a color" Click="PickColor_Click"
+                                                        ToolTip="Click, then click anywhere on screen. The color code is copied." />
+                                            </StackPanel>
+                                            <StackPanel x:Name="ColorHistory" Orientation="Horizontal" Margin="0,0,0,6" />
+                                            <TextBlock x:Name="CountdownBig" Style="{StaticResource NotchText}" FontWeight="SemiBold" FontSize="{DynamicResource FontLarge}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="CountdownSub" Style="{StaticResource SubText}" TextWrapping="Wrap" />
+                                        </StackPanel>
                                     </Grid>
 
                                     <!-- ===== Controls: quick toggles ===== -->

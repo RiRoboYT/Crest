@@ -162,6 +162,27 @@ namespace Crest.Models
         private bool _hideWhileTyping = false;
         private bool _tourShown = false;
 
+        // ---------- v1.4 ----------
+        private bool _coverBackdrop = true;
+        private bool _progressLine = true;
+        private string _idleBuddy = "Off";
+        private bool _nightDim = false;
+        private int _nightDimFrom = 22;
+        private int _nightDimTo = 7;
+        private int _nightDimLevel = 55;
+        private bool _downloadActivity = true;
+        private bool _downloadsToShelf = true;
+        private bool _rainAlerts = true;
+        private bool _deviceBatteryAlerts = true;
+        private bool _meetingJoinButton = true;
+        private bool _pageTools = true;
+        private string _countdownTitle = "";
+        private string _countdownDate = "";
+        private bool _focusStats = true;
+        private bool _hideDuringPresentations = true;
+        private bool _trimMemory = true;
+        private bool _keyboardControl = true;
+
         // ---------- Behavior ----------
         private bool _startWithWindows = false;
         private bool _alwaysOnTop = true;
@@ -314,6 +335,43 @@ namespace Crest.Models
         public bool HideWhileTyping { get => _hideWhileTyping; set => Set(ref _hideWhileTyping, value); }
         /// <summary>The first-run tour has been shown.</summary>
         public bool TourShown { get => _tourShown; set => Set(ref _tourShown, value); }
+
+        // ================================================================ v1.4
+        /// <summary>A soft, blurred copy of the cover behind the open player.</summary>
+        public bool CoverBackdrop { get => _coverBackdrop; set => Set(ref _coverBackdrop, value); }
+        /// <summary>A thin line along the bottom of the closed notch that fills as the song plays.</summary>
+        public bool ProgressLine { get => _progressLine; set => Set(ref _progressLine, value); }
+        /// <summary>Off, Cat or Pulse: a little companion in the closed notch while nothing plays.</summary>
+        public string IdleBuddy
+        {
+            get => _idleBuddy;
+            set => Set(ref _idleBuddy, value is "Cat" or "Pulse" ? value : "Off");
+        }
+        public bool NightDim { get => _nightDim; set => Set(ref _nightDim, value); }
+        /// <summary>Hour of the day (0–23) the dimming starts / ends.</summary>
+        public int NightDimFrom { get => _nightDimFrom; set => Set(ref _nightDimFrom, Math.Clamp(value, 0, 23)); }
+        public int NightDimTo { get => _nightDimTo; set => Set(ref _nightDimTo, Math.Clamp(value, 0, 23)); }
+        /// <summary>Brightness of the closed notch at night, in percent.</summary>
+        public int NightDimLevel { get => _nightDimLevel; set => Set(ref _nightDimLevel, Math.Clamp(value, 20, 90)); }
+        /// <summary>Download progress next to the notch and a pop-up when a browser download finishes.</summary>
+        public bool DownloadActivity { get => _downloadActivity; set => Set(ref _downloadActivity, value); }
+        public bool DownloadsToShelf { get => _downloadsToShelf; set => Set(ref _downloadsToShelf, value); }
+        public bool RainAlerts { get => _rainAlerts; set => Set(ref _rainAlerts, value); }
+        /// <summary>Pop-up when a Bluetooth mouse / keyboard / headset drops to 15 %.</summary>
+        public bool DeviceBatteryAlerts { get => _deviceBatteryAlerts; set => Set(ref _deviceBatteryAlerts, value); }
+        /// <summary>Meeting reminders and calendar rows get a Join button when the event has a Teams / Zoom / Meet link.</summary>
+        public bool MeetingJoinButton { get => _meetingJoinButton; set => Set(ref _meetingJoinButton, value); }
+        public bool PageTools { get => _pageTools; set => Set(ref _pageTools, value); }
+        public string CountdownTitle { get => _countdownTitle; set => Set(ref _countdownTitle, (value ?? "").Trim()); }
+        /// <summary>The day counted down to, as yyyy-MM-dd (other common formats are understood too).</summary>
+        public string CountdownDate { get => _countdownDate; set => Set(ref _countdownDate, (value ?? "").Trim()); }
+        public bool FocusStats { get => _focusStats; set => Set(ref _focusStats, value); }
+        /// <summary>Hide the notch during a PowerPoint slideshow or Windows presentation mode.</summary>
+        public bool HideDuringPresentations { get => _hideDuringPresentations; set => Set(ref _hideDuringPresentations, value); }
+        /// <summary>Hand unused memory back to Windows while Crest sits idle.</summary>
+        public bool TrimMemory { get => _trimMemory; set => Set(ref _trimMemory, value); }
+        /// <summary>After Win + Alt + N: arrows switch pages / change volume, Space plays or pauses, Esc closes.</summary>
+        public bool KeyboardControl { get => _keyboardControl; set => Set(ref _keyboardControl, value); }
 
         // ================================================================ Behavior
         public bool StartWithWindows { get => _startWithWindows; set => Set(ref _startWithWindows, value); }

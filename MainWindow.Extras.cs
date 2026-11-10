@@ -113,7 +113,8 @@ namespace Crest
         private double ExtrasCollapsedWidth
             => (CollapsedArt.Visibility == Visibility.Visible ? CollapsedArtWidth : 0)
                + (MicMutedIcon.Visibility == Visibility.Visible ? MicIconWidth : 0)
-               + (CollapsedNet.Visibility == Visibility.Visible ? NetTextWidth + 10 : 0);
+               + (CollapsedNet.Visibility == Visibility.Visible ? NetTextWidth + 10 : 0)
+               + (IdleBuddy.Visibility == Visibility.Visible ? IdleBuddyWidth : 0);
 
         private void UpdateCollapsedArt(bool animate, bool resize)
         {
@@ -179,6 +180,7 @@ namespace Crest
                 }
             }
             UpdateCollapsedArt(animate: true, resize: true);
+            UpdateCoverBackdrop(animate: true);
             UpdateShuffleRepeat();
             SwapGlyph(PlayPauseButton, Media.IsPlaying ? "\uE769" : "\uE768");
         }

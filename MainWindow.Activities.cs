@@ -74,6 +74,19 @@ namespace Crest
         private void ShowActivity(string glyph, Color color, string title, string subtitle, string value,
                                   double? level, int milliseconds, string? opensPage = null, bool hud = false)
         {
+            _activityOpensUrl = null;
+
+            // The notch is open: there is no room for a pop-up, so show it as a line in the header.
+            if (_state == NotchState.Expanded)
+            {
+                if (IsEffectivelyVisible && !_quiet && !_previewPinned && (hud || !PopupsSilenced))
+                {
+                    string line = string.IsNullOrEmpty(subtitle) || level != null ? title : title + " · " + subtitle;
+                    ShowHeaderToast(glyph, color, line, value, level, Math.Min(milliseconds, 3500));
+                }
+                return;
+            }
+
             // The volume / brightness indicator may also show while the pointer is on the notch
             // (scrolling over it changes the volume).
             bool allowed = hud
@@ -107,7 +120,15 @@ namespace Crest
         private void Activity_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             e.Handled = true;
-            if (_activityOpensPage != null)
+            if (_activityOpensUrl != null)
+            {
+                // Meeting reminder with a link → join it.
+                string url = _activityOpensUrl;
+                _activityOpensUrl = null;
+                OpenLink(url);
+                SetState(NotchState.Collapsed, animate: true);
+            }
+            else if (_activityOpensPage != null)
             {
                 SelectPage(_activityOpensPage, 0);
                 _hotkeyPinned = true;   // stay open until the mouse leaves
@@ -141,8 +162,12 @@ namespace Crest
             _lastVolume = v;
             _lastMuted = muted;
 
-            if (!changed || !_settings.VolumeHud || _hudSuppressed) return;
+            if (!changed || !_settings.VolumeHud) return;
             if (DateTime.UtcNow - _startedAt < StartupPeekGrace) return;
+
+            // Open notch (e.g. scrolling with the mouse on it): show the percentage in the header.
+            if (TryShowVolumeToast(v, muted)) return;
+            if (_hudSuppressed) return;
 
             ShowActivity(VolumeGlyph(v, muted), Violet, "Volume", "",
                          muted ? "Muted" : $"{Math.Round(v * 100)}%", muted ? 0 : v, 1500, hud: true);
@@ -179,10 +204,12 @@ namespace Crest
         {
             if (!_settings.CalendarActivity) return;
             bool now = when == "now";
+            bool join = _settings.MeetingJoinButton && !string.IsNullOrEmpty(ev.JoinUrl);
             ShowActivity("\uE787", Red, ev.Title,
-                         now ? $"Starting now · {ev.Start:t}" : $"Starts {when} · {ev.Start:t}",
-                         now ? "Now" : when.Replace("in ", ""), null, 6000,
+                         (now ? $"Starting now · {ev.Start:t}" : $"Starts {when} · {ev.Start:t}") + (join ? " · click to join" : ""),
+                         join ? "Join" : now ? "Now" : when.Replace("in ", ""), null, join ? 9000 : 6000,
                          _settings.PageCalendar ? "Calendar" : null);
+            if (join && _state == NotchState.Activity) _activityOpensUrl = ev.JoinUrl;
         }
 
         private void OnTimerFinished()
@@ -200,15 +227,22 @@ namespace Crest
         {
             if (Bubble == null) return;
             var t = _svc.Timer;
-            bool show = t.IsActive && _state != NotchState.Expanded && IsEffectivelyVisible;
+            _downloadInBubble = !t.IsActive && _settings.DownloadActivity && _svc.Downloads.IsDownloading;
+            bool show = (t.IsActive || _downloadInBubble) && _state != NotchState.Expanded && IsEffectivelyVisible;
             int ms = animate ? _settings.AnimationDurationMs : 0;
 
-            string text = TimerService.Format(t.Value);
+            string text = _downloadInBubble ? DownloadWatcherService.FormatSize(_svc.Downloads.ReceivedBytes) : TimerService.Format(t.Value);
             BubbleText.Text = text;
+            BubbleIcon.Text = _downloadInBubble ? "\uE896" : "\uE916";
             BubbleIcon.Foreground = new SolidColorBrush(!t.Running ? Gray
                 : t.Mode == TimerMode.Focus ? (t.IsBreak ? Green : Tomato)
                 : Orange);
             Bubble.ToolTip = t.Mode == TimerMode.Focus ? (t.IsBreak ? "Break – open the timer" : $"Focus round {t.Round} – open the timer") : "Open the timer";
+            if (_downloadInBubble)
+            {
+                BubbleIcon.Foreground = new SolidColorBrush(Blue);
+                Bubble.ToolTip = _svc.Downloads.Count > 1 ? $"{_svc.Downloads.Count} downloads – open the Downloads folder" : "Downloading – open the Downloads folder";
+            }
             double width = Math.Min(BubbleMaxWidth, 34 + text.Length * (_settings.FontSize * 0.62));
 
             if (show)
@@ -243,6 +277,11 @@ namespace Crest
         private void Bubble_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             e.Handled = true;
+            if (_downloadInBubble)
+            {
+                OpenPath(DownloadWatcherService.DownloadsFolder());
+                return;
+            }
             if (_settings.PageTimer) SelectPage("Timer", 0);
             _hotkeyPinned = true;   // stay open until the mouse enters and leaves the notch
             SetState(NotchState.Expanded, animate: true);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Windows.Devices.Enumeration;
@@ -37,6 +38,57 @@ namespace Crest.Services
 
         /// <summary>(device name, battery % or -1)</summary>
         public event Action<string, int>? AudioDeviceConnected;
+        /// <summary>A connected device (mouse, keyboard, headphones…) dropped to 15 % or less.</summary>
+        public event Action<string, int>? DeviceBatteryLow;
+        /// <summary>The list in <see cref="Batteries"/> changed.</summary>
+        public event EventHandler? BatteriesChanged;
+
+        private readonly List<(string Name, int Percent)> _batteries = new();
+        private readonly HashSet<string> _warnedLow = new();
+        private DispatcherTimer? _batteryTimer;
+
+        /// <summary>Connected Bluetooth devices that report a battery level.</summary>
+        public IReadOnlyList<(string Name, int Percent)> Batteries => _batteries;
+
+        private async Task<int> ReadBatteryAsync(Device d)
+        {
+            if (d.Container is not Guid container) return -1;
+            try
+            {
+                var found = await DeviceInformation.FindAllAsync(
+                    $"System.Devices.ContainerId:=\"{{{container}}}\"",
+                    new[] { BatteryKey }, DeviceInformationKind.Device);
+                foreach (var dev in found)
+                {
+                    if (dev.Properties.TryGetValue(BatteryKey, out var v) && v != null)
+                        return Convert.ToInt32(v);
+                }
+            }
+            catch
+            {
+                // battery not exposed by this device
+            }
+            return -1;
+        }
+
+        /// <summary>Re-reads every connected device's battery (also runs every 10 minutes).</summary>
+        public async Task RefreshBatteriesAsync()
+        {
+            var list = new List<(string Name, int Percent)>();
+            foreach (var d in _devices.Values.ToList())
+            {
+                if (!d.Connected || string.IsNullOrWhiteSpace(d.Name)) continue;
+                int pct = await ReadBatteryAsync(d);
+                if (pct < 0) continue;
+                list.Add((d.Name, pct));
+
+                if (pct <= 15 && _warnedLow.Add(d.Name)) DeviceBatteryLow?.Invoke(d.Name, pct);
+                else if (pct > 25) _warnedLow.Remove(d.Name);
+            }
+            _batteries.Clear();
+            _batteries.AddRange(list.OrderBy(b => b.Percent));
+            BatteriesChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         public BluetoothService(Dispatcher dispatcher)
         {
@@ -56,6 +108,13 @@ namespace Crest.Services
                 _watcher.Removed += (_, update) => _dispatcher.InvokeAsync(() => _devices.Remove(update.Id));
                 _watcher.EnumerationCompleted += (_, _) => _dispatcher.InvokeAsync(() => _enumerated = true);
                 _watcher.Start();
+
+                _batteryTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(10) };
+                _batteryTimer.Tick += (_, _) => _ = RefreshBatteriesAsync();
+                _batteryTimer.Start();
+                var first = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(20) };
+                first.Tick += (_, _) => { first.Stop(); _ = RefreshBatteriesAsync(); };
+                first.Start();
             }
             catch (Exception ex)
             {

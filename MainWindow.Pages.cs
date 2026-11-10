@@ -54,6 +54,7 @@ namespace Crest
             _pages.Add(new PageInfo("Notes", TabNotes, PageNotes, () => _settings.PageNotes));
             _pages.Add(new PageInfo("Sound", TabSound, PageSound, () => _settings.PageSound));
             _pages.Add(new PageInfo("Controls", TabControls, PageControls, () => _settings.PageControls));
+            _pages.Add(new PageInfo("Tools", TabTools, PageTools, () => _settings.PageTools));
 
             _lyricsTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(200) };
             _lyricsTimer.Tick += (_, _) => UpdateLyricLine(force: false);
@@ -179,7 +180,8 @@ namespace Crest
             }
 
             SetStatsInUse(name == "System" && _state == NotchState.Expanded);
-            if (name != "Notes" && _typing) EndTyping(collapseIfOutside: false);
+            if (name != "Notes" && name != "Tools" && _typing) EndTyping(collapseIfOutside: false);
+            UpdateCoverBackdrop(animate: true);
             RenderCurrentPage();
             UpdateLyricsTimer();
             UpdateProgress();
@@ -222,6 +224,7 @@ namespace Crest
                 case "Shelf": RenderShelf(); break;
                 case "Notes": RenderClipboard(); break;
                 case "Sound": RenderSound(); break;
+                case "Tools": RenderTools(); break;
                 case "Controls":
                     RenderControls();
                     _ = _svc.Toggles.RefreshRadiosAsync();
@@ -450,6 +453,8 @@ namespace Crest
             Grid.SetColumn(what, 2);
             row.Children.Add(what);
 
+            if (TryAddJoinChip(row, ev)) return row;
+
             string rel = ev.Start <= now ? "now" : (ev.Start - now).TotalMinutes < 60 ? $"in {Math.Ceiling((ev.Start - now).TotalMinutes)} min" : "";
             if (rel.Length > 0)
             {
@@ -536,6 +541,9 @@ namespace Crest
                 : "";
             string net = $"↓ {NetworkSpeedService.Format(_svc.Network.Down)}  ↑ {NetworkSpeedService.Format(_svc.Network.Up)}  ·  ";
             SystemFooter.Text = net + battery + uptime;
+            string devices = DeviceBatteriesText();
+            DevicesFooter.Text = devices;
+            DevicesFooter.Visibility = devices.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // =====================================================================
@@ -561,6 +569,15 @@ namespace Crest
                     ? $"Break · then round {t.Round + 1}"
                     : $"Focus · round {t.Round} · {(int)t.FocusBreak.TotalMinutes} min break next";
                 TimerSub.Foreground = new SolidColorBrush(t.IsBreak ? Green : Tomato);
+            }
+
+            bool stats = focus && _settings.FocusStats;
+            FocusStatsText.Visibility = stats ? Visibility.Visible : Visibility.Collapsed;
+            if (stats)
+            {
+                var fs = _svc.FocusStats;
+                FocusStatsText.Text = $"Today {FocusStatsService.FormatMinutes(fs.Today)} · 7 days {FocusStatsService.FormatMinutes(fs.Week)}"
+                                      + (fs.Streak > 1 ? $" · {fs.Streak}-day streak" : "");
             }
         }
 
@@ -647,6 +664,29 @@ namespace Crest
             };
             remove.Click += (_, _) => _svc.Shelf.Remove(path);
             grid.Children.Add(remove);
+
+            // Favourites: right-click pins / unpins. Pinned items stay, and open with one click.
+            bool pinned = _svc.Shelf.IsPinned(path);
+            if (pinned)
+            {
+                var pin = MakeText("\uE718");
+                pin.FontFamily = (FontFamily)FindResource("IconFont");
+                pin.FontSize = 9;
+                pin.Foreground = new SolidColorBrush(Amber);
+                pin.HorizontalAlignment = HorizontalAlignment.Left;
+                pin.VerticalAlignment = VerticalAlignment.Top;
+                pin.Margin = new Thickness(5, 4, 0, 0);
+                grid.Children.Add(pin);
+            }
+            tile.ToolTip = path + (pinned ? "\nPinned – click to open · right-click to unpin" : "\nDouble-click to open · right-click to pin");
+            tile.MouseRightButtonUp += (_, e) => { e.Handled = true; _svc.Shelf.TogglePin(path); };
+            tile.MouseLeftButtonUp += (_, e) =>
+            {
+                if (!pinned || _shelfDragPath != path) return;
+                _shelfDragPath = null;
+                e.Handled = true;
+                OpenPath(path);
+            };
             tile.Child = grid;
 
             tile.MouseEnter += (_, _) => { tile.SetResourceReference(Border.BackgroundProperty, "HoverBrush"); remove.Visibility = Visibility.Visible; };
@@ -762,15 +802,26 @@ namespace Crest
         private void RenderClipboard()
         {
             ClipboardList.Children.Clear();
-            var items = _svc.Clipboard.Items;
-            if (items.Count == 0)
+            var clip = _svc.Clipboard;
+
+            // Pinned texts first, then the newest copies that aren't pinned.
+            var rows = new List<(ClipItem Item, bool Pinned)>();
+            foreach (var text in clip.Pinned) rows.Add((new ClipItem { Text = text }, true));
+            foreach (var item in clip.Items)
+            {
+                if (rows.Count >= Math.Max(4, clip.Pinned.Count + 2)) break;
+                if (item.Text != null && clip.IsPinned(item.Text)) continue;
+                rows.Add((item, false));
+            }
+
+            if (rows.Count == 0)
             {
                 ClipboardList.Children.Add(MakeText(_settings.ClipboardImages ? "Copy text or an image and it shows up here." : "Copy some text and it shows up here.", subtle: true));
                 ((TextBlock)ClipboardList.Children[0]).TextWrapping = TextWrapping.Wrap;
                 return;
             }
 
-            foreach (var item in items.Take(4))
+            foreach (var (item, isPinned) in rows.Take(5))
             {
                 FrameworkElement content;
                 TextBlock? label = null;
@@ -790,7 +841,24 @@ namespace Crest
                     string oneLine = (item.Text ?? "").Replace("\r", " ").Replace("\n", " ");
                     label = MakeText(oneLine);
                     label.FontSize = Math.Max(8, _settings.FontSize - 2);
-                    content = label;
+                    if (isPinned)
+                    {
+                        var pin = MakeText("\uE718");
+                        pin.FontFamily = (FontFamily)FindResource("IconFont");
+                        pin.FontSize = 9;
+                        pin.Foreground = new SolidColorBrush(Amber);
+                        pin.VerticalAlignment = VerticalAlignment.Center;
+                        pin.Margin = new Thickness(0, 0, 4, 0);
+                        var line = new DockPanel();
+                        DockPanel.SetDock(pin, Dock.Left);
+                        line.Children.Add(pin);
+                        line.Children.Add(label);
+                        content = line;
+                    }
+                    else
+                    {
+                        content = label;
+                    }
                 }
 
                 var button = new Button
@@ -800,7 +868,9 @@ namespace Crest
                     Margin = new Thickness(2, 1, 0, 3),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Left,
-                    ToolTip = item.IsImage ? "Copy this image again" : "Copy again"
+                    ToolTip = item.IsImage ? "Copy this image again"
+                            : isPinned ? "Click: copy · Right-click: unpin"
+                            : "Click: copy again · Right-click: pin (keeps it here)"
                 };
                 var value = item;
                 button.Click += (_, _) =>
@@ -811,6 +881,11 @@ namespace Crest
                     _copiedTimer?.Stop();
                     _copiedTimer?.Start();
                 };
+                if (value.Text != null)
+                {
+                    string text = value.Text;
+                    button.MouseRightButtonUp += (_, e) => { e.Handled = true; _svc.Clipboard.TogglePin(text); };
+                }
                 ClipboardList.Children.Add(button);
             }
         }

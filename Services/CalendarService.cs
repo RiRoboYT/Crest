@@ -7,7 +7,7 @@ using System.Windows.Threading;
 
 namespace Crest.Services
 {
-    public sealed record CalendarEvent(string Title, DateTime Start, DateTime End, string Location);
+    public sealed record CalendarEvent(string Title, DateTime Start, DateTime End, string Location, string JoinUrl = "");
 
     /// <summary>
     /// Reads the user's calendar from its private iCal (.ics) address – Google Calendar, Outlook and
@@ -116,6 +116,18 @@ namespace Crest.Services
         private sealed class RawEvent
         {
             public string Uid = "", Summary = "", Location = "", Rrule = "";
+            public string Links = "";   // every field that may hold a meeting link, joined
+
+            private static readonly System.Text.RegularExpressions.Regex MeetingLink = new(
+                @"https://(?:teams\.microsoft\.com/l/meetup-join/[^\s<>""\\]+|teams\.live\.com/meet/[^\s<>""\\]+|[\w.-]*zoom\.us/j/[^\s<>""\\]+|meet\.google\.com/[a-z]{3}-[a-z]{4}-[a-z]{3}|[\w.-]*webex\.com/[^\s<>""\\]+)",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+            /// <summary>First Teams / Zoom / Google Meet / Webex link found in the event, or "".</summary>
+            public string JoinUrl()
+            {
+                var m = MeetingLink.Match(Location + " " + Links);
+                return m.Success ? m.Value : "";
+            }
             public DateTime? Start, End, RecurrenceId;
             public bool AllDay, Cancelled;
             public List<DateTime> ExDates = new();
@@ -137,6 +149,13 @@ namespace Crest.Services
                     case "UID": cur.Uid = value; break;
                     case "SUMMARY": cur.Summary = Unescape(value); break;
                     case "LOCATION": cur.Location = Unescape(value); break;
+                    case "DESCRIPTION":
+                    case "URL":
+                    case "X-GOOGLE-CONFERENCE":
+                    case "X-MICROSOFT-SKYPETEAMSMEETINGURL":
+                    case "X-MICROSOFT-ONLINEMEETINGEXTERNALLINK":
+                        cur.Links += " " + Unescape(value);
+                        break;
                     case "RRULE": cur.Rrule = value; break;
                     case "STATUS": cur.Cancelled = value.Equals("CANCELLED", StringComparison.OrdinalIgnoreCase); break;
                     case "DTSTART":
@@ -168,7 +187,7 @@ namespace Crest.Services
                 if (string.IsNullOrEmpty(r.Rrule) || r.RecurrenceId.HasValue)
                 {
                     if (start + length >= from && start <= to)
-                        result.Add(new CalendarEvent(title, start, start + length, r.Location));
+                        result.Add(new CalendarEvent(title, start, start + length, r.Location, r.JoinUrl()));
                     continue;
                 }
 
@@ -176,7 +195,7 @@ namespace Crest.Services
                 {
                     if (r.ExDates.Any(x => Math.Abs((x - occ).TotalMinutes) < 1)) continue;
                     if (overrides.Contains(r.Uid + "|" + occ.Ticks)) continue;
-                    result.Add(new CalendarEvent(title, occ, occ + length, r.Location));
+                    result.Add(new CalendarEvent(title, occ, occ + length, r.Location, r.JoinUrl()));
                 }
             }
             return result.OrderBy(e => e.Start).ToList();

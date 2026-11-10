@@ -43,6 +43,7 @@ namespace Crest
 
         private void Notch_MouseEnter(object sender, MouseEventArgs e)
         {
+            UpdateNightDim(animate: true);
             _collapseTimer.Stop();
             _popupTimer.Stop();   // keep a peek / pop-up open while you're reading it
 
@@ -63,6 +64,7 @@ namespace Crest
 
         private void Notch_MouseLeave(object sender, MouseEventArgs e)
         {
+            Dispatcher.BeginInvoke(new Action(() => UpdateNightDim(animate: true)), System.Windows.Threading.DispatcherPriority.Background);
             _hoverTimer.Stop();
             _hotkeyPinned = false;   // opened by hotkey / click: closes once you've been in and left
             if (_previewPinned || _typing || _dragActive || _dragOut) return;
@@ -206,6 +208,7 @@ namespace Crest
             {
                 _hotkeyPinned = true;
                 SetState(NotchState.Expanded, animate: true);
+                EnterKeyboardMode();   // arrows, Space and Esc now drive the notch
             }
         }
 
@@ -269,14 +272,18 @@ namespace Crest
         // =====================================================================
 
         /// <summary>The notch normally never takes focus; while typing a note it must.</summary>
-        private void BeginTyping()
+        /// <summary>Gives a text box in the notch (note, to-do, calculator) real keyboard focus.</summary>
+        private void BeginTyping(TextBox? box = null)
         {
-            if (_typing) return;
-            _typing = true;
-            SetNoActivate(false);
-            Activate();
-            NotesBox.Focus();
-            Keyboard.Focus(NotesBox);
+            box ??= NotesBox;
+            if (!_typing)
+            {
+                _typing = true;
+                SetNoActivate(false);
+                Activate();
+            }
+            box.Focus();
+            Keyboard.Focus(box);
         }
 
         private void EndTyping(bool collapseIfOutside)

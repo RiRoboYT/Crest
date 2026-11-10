@@ -88,7 +88,7 @@ namespace Crest
             DataContext = _settings;
 
             SettingsPathText.Text = manager.SettingsPath;
-            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.3.0");
+            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.4.0");
 
             // Theme
             ApplyTheme();

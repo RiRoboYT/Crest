@@ -295,5 +295,39 @@ namespace Crest.Helpers
                                                       IntPtr hToken, out string pszPath);
 
         public static readonly Guid FOLDERID_Screenshots = new("b7bede81-df94-4682-a7d8-57a52620b86f");
+    
+        // ------------------------------------------------------------------ v1.4 additions
+
+        /// <summary>5 = QUNS_ACCEPTS_NOTIFICATIONS, 4 = presentation mode, 3 = fullscreen game, 2 = busy.</summary>
+        [DllImport("shell32.dll")]
+        public static extern int SHQueryUserNotificationState(out int state);
+
+        public static readonly Guid FOLDERID_Downloads = new("374DE290-123F-4565-9164-39C4925E467B");
+
+        // Color picker: read one screen pixel.
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport("gdi32.dll")]
+        public static extern uint GetPixel(IntPtr hdc, int x, int y);
+
+        public const int SM_XVIRTUALSCREEN = 76;
+        public const int SM_YVIRTUALSCREEN = 77;
+        public const int SM_CXVIRTUALSCREEN = 78;
+        public const int SM_CYVIRTUALSCREEN = 79;
+
+        [DllImport("user32.dll")]
+        public static extern int GetSystemMetrics(int index);
+
+        // Give memory back to Windows while idle.
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumSize, IntPtr maximumSize);
     }
 }

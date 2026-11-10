@@ -40,6 +40,53 @@ namespace Crest.Services
 
         public IReadOnlyList<ClipItem> Items => _items;
 
+        // ---------------------------------------------------------------- pinned texts (kept on disk because you chose them)
+        private static readonly string PinsPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Crest", "clipboard-pins.json");
+        private List<string>? _pinned;
+
+        /// <summary>Texts you pinned (signature, address, links…). Always shown first.</summary>
+        public IReadOnlyList<string> Pinned
+        {
+            get
+            {
+                if (_pinned != null) return _pinned;
+                try
+                {
+                    _pinned = System.IO.File.Exists(PinsPath)
+                        ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(System.IO.File.ReadAllText(PinsPath))
+                        : null;
+                }
+                catch
+                {
+                    _pinned = null;
+                }
+                return _pinned ??= new List<string>();
+            }
+        }
+
+        public bool IsPinned(string text) => Pinned.Contains(text);
+
+        public void TogglePin(string text)
+        {
+            var list = (List<string>)Pinned;
+            if (!list.Remove(text))
+            {
+                list.Insert(0, text);
+                if (list.Count > 6) list.RemoveRange(6, list.Count - 6);
+            }
+            try
+            {
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PinsPath)!);
+                System.IO.File.WriteAllText(PinsPath, System.Text.Json.JsonSerializer.Serialize(list));
+            }
+            catch (Exception ex)
+            {
+                App.LogError("Saving clipboard pins failed", ex);
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
         /// <summary>Also remember copied images (screenshots, pictures from the web…).</summary>
         public bool ImagesEnabled { get; set; } = true;
 

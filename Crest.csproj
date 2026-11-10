@@ -14,7 +14,7 @@
     <AssemblyName>Crest</AssemblyName>
     <RootNamespace>Crest</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Product>Crest</Product>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 

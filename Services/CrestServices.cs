@@ -29,6 +29,9 @@ namespace Crest.Services
         public AudioDevicesService AudioDevices { get; }
         public NetworkSpeedService Network { get; }
         public QuickTogglesService Toggles { get; }
+        public TodoService Todo { get; }
+        public FocusStatsService FocusStats { get; }
+        public DownloadWatcherService Downloads { get; }
 
         public CrestServices(Dispatcher dispatcher)
         {
@@ -55,6 +58,9 @@ namespace Crest.Services
             AudioDevices = new AudioDevicesService();
             Network = new NetworkSpeedService();
             Toggles = new QuickTogglesService();
+            Todo = new TodoService();
+            FocusStats = new FocusStatsService();
+            Downloads = new DownloadWatcherService(dispatcher);
         }
 
         /// <summary>Starts everything that runs on its own.</summary>
@@ -95,6 +101,7 @@ namespace Crest.Services
             Safe(AudioDevices.Dispose);
             Safe(Network.Dispose);
             Safe(Toggles.Dispose);
+            Safe(Downloads.Dispose);
         }
     }
 }

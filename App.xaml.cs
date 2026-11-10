@@ -78,6 +78,15 @@ namespace Crest
             {
                 if (settings.TimerSound) System.Media.SystemSounds.Asterisk.Play();
             };
+            _services.Timer.FocusPhaseChanged += (_, _) =>
+            {
+                // A break just started → the work block before it is done.
+                if (_services.Timer.IsBreak) _services.FocusStats.AddMinutes((int)_services.Timer.FocusWork.TotalMinutes);
+            };
+            _services.Downloads.Finished += path =>
+            {
+                if (settings.DownloadsToShelf && settings.PageShelf) _services.Shelf.Add(new[] { path });
+            };
             _services.Hotkey.SetEnabled(settings.HotkeyEnabled);
             _services.Start();
             ApplySharedSettings(settings);
@@ -95,6 +104,11 @@ namespace Crest
                 _notches.ForEach(n => n.SetNotchVisible(visible));
             };
             _tray.ExitRequested += (_, _) => ExitApplication();
+
+            // ---- idle memory trim ----
+            var trim = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(5) };
+            trim.Tick += (_, _) => TrimMemoryIfIdle();
+            trim.Start();
 
             // ---- first run: a short tour ----
             if (!settings.TourShown)
@@ -114,6 +128,24 @@ namespace Crest
             _services.Shelf.WatchScreenshots(s.ScreenshotsToShelf);
             _services.Clipboard.SetImagesEnabled(s.ClipboardImages);
             _services.Timer.ConfigureFocus(s.FocusWorkMinutes, s.FocusBreakMinutes);
+            _services.Downloads.SetEnabled(s.DownloadActivity || s.DownloadsToShelf);
+        }
+
+        /// <summary>While every notch is closed and nothing plays, hand unused memory back to Windows.</summary>
+        private void TrimMemoryIfIdle()
+        {
+            if (_settingsManager?.Settings.TrimMemory != true || _services == null) return;
+            if (_settingsWindow != null || _tour != null || _services.Media.IsPlaying) return;
+            if (_notches.Any(n => n.State != NotchState.Collapsed)) return;
+            try
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, blocking: false);
+                NativeMethods.SetProcessWorkingSetSize(NativeMethods.GetCurrentProcess(), new IntPtr(-1), new IntPtr(-1));
+            }
+            catch (Exception ex)
+            {
+                LogError("Trimming memory failed", ex);
+            }
         }
 
         /// <summary>Shows the three-step welcome tour under the notch (first run, or Settings → About).</summary>
@@ -162,6 +194,8 @@ namespace Crest
                 case nameof(AppSettings.ClipboardImages):
                 case nameof(AppSettings.FocusWorkMinutes):
                 case nameof(AppSettings.FocusBreakMinutes):
+                case nameof(AppSettings.DownloadActivity):
+                case nameof(AppSettings.DownloadsToShelf):
                     ApplySharedSettings(s);
                     break;
                 case nameof(AppSettings.MonitorDevice):

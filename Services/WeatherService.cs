@@ -36,6 +36,9 @@ namespace Crest.Services
         private bool _configured;
 
         public event EventHandler? Updated;
+        /// <summary>Rain is expected to start in about this many minutes (UI thread, at most every 3 hours).</summary>
+        public event Action<int>? RainSoon;
+        private DateTime _lastRainAlert = DateTime.MinValue;
 
         public WeatherSnapshot? Current { get; private set; }
         public string Status { get; private set; } = "Add your city in Settings → Widgets.";
@@ -90,6 +93,7 @@ namespace Crest.Services
                 string url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat.ToString(CultureInfo.InvariantCulture)
                            + "&longitude=" + lon.ToString(CultureInfo.InvariantCulture)
                            + "&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day"
+                           + "&minutely_15=precipitation&forecast_minutely_15=8&past_minutely_15=1"
                            + "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2&temperature_unit=" + unit;
 
                 string json = await Http.Client.GetStringAsync(url);
@@ -126,6 +130,7 @@ namespace Crest.Services
                     Hours = hours
                 };
                 Status = "";
+                CheckRain(root);
             }
             catch (Exception ex)
             {
@@ -133,6 +138,41 @@ namespace Crest.Services
                 if (Current == null) Status = "Weather is unavailable right now.";
             }
             Updated?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>Dry now, wet within the next ~90 minutes → one "rain soon" alert.</summary>
+        private void CheckRain(JsonElement root)
+        {
+            try
+            {
+                if (!root.TryGetProperty("minutely_15", out var m)) return;
+                var times = m.GetProperty("time");
+                var rain = m.GetProperty("precipitation");
+                DateTime now = DateTime.Now;
+                bool rainingNow = false;
+                int? startsIn = null;
+                for (int i = 0; i < times.GetArrayLength(); i++)
+                {
+                    if (!DateTime.TryParse(times[i].GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var t)) continue;
+                    if (rain[i].ValueKind != JsonValueKind.Number) continue;
+                    double mm = rain[i].GetDouble();
+                    if (t <= now)
+                    {
+                        if (t > now.AddMinutes(-16)) rainingNow = mm >= 0.1;   // the slot we're in
+                        continue;
+                    }
+                    if (mm >= 0.1 && startsIn == null && (t - now).TotalMinutes <= 90)
+                        startsIn = Math.Max(5, (int)Math.Round((t - now).TotalMinutes / 5) * 5);
+                }
+                if (rainingNow || startsIn == null) return;
+                if (DateTime.Now - _lastRainAlert < TimeSpan.FromHours(3)) return;
+                _lastRainAlert = DateTime.Now;
+                RainSoon?.Invoke(startsIn.Value);
+            }
+            catch
+            {
+                // rain data is optional
+            }
         }
 
         private static async Task<(double, double, string)?> GeocodeAsync(string city)

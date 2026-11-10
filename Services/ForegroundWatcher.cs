@@ -29,6 +29,8 @@ namespace Crest.Services
 
         /// <summary>True when the foreground window covers its whole monitor (video / game).</summary>
         public bool IsFullscreen { get; private set; }
+        /// <summary>A slideshow is running in front (PowerPoint), or Windows is in presentation mode.</summary>
+        public bool IsPresenting { get; private set; }
 
         /// <summary>Monitor (HMONITOR) the foreground window is on.</summary>
         public IntPtr Monitor { get; private set; }
@@ -73,7 +75,20 @@ namespace Crest.Services
                     fullscreen = pid != _ownPid && IsFullscreenWindow(fg, monitor);
                 }
 
-                bool changed = name != ProcessName || fullscreen != IsFullscreen || monitor != Monitor;
+                bool presenting = false;
+                try
+                {
+                    // "screenClass" is PowerPoint's slideshow window; state 4 is Windows' presentation mode.
+                    presenting = (fg != IntPtr.Zero && NativeMethods.GetWindowClass(fg) == "screenClass")
+                                 || (NativeMethods.SHQueryUserNotificationState(out int quns) == 0 && quns == 4);
+                }
+                catch
+                {
+                    // not available – treat as not presenting
+                }
+
+                bool changed = name != ProcessName || fullscreen != IsFullscreen || monitor != Monitor || presenting != IsPresenting;
+                IsPresenting = presenting;
                 ProcessName = name;
                 IsFullscreen = fullscreen;
                 Monitor = monitor;
