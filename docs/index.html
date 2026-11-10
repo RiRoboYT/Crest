@@ -879,7 +879,8 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
 .shot figcaption { padding: 14px 18px 16px; color: var(--sub); font-size: 14px; }
 .shot figcaption b { color: var(--text); font-weight: 600; display: block; margin-bottom: 2px; }
 .shot img { display: block; width: 100%; height: auto; }
-.shot .stage { padding: 0 20px 26px; background: radial-gradient(120% 90% at 50% 0%, #2a2350 0%, #12121c 60%, #0c0c12 100%); display: grid; justify-items: center; }
+.shot { margin: 0; }
+.shot .shot-stage { padding: 0 20px 26px; background: radial-gradient(120% 90% at 50% 0%, #2a2350 0%, #12121c 60%, #0c0c12 100%); display: grid; justify-items: center; }
 .mock { width: min(100%, 420px); min-height: 150px; border-radius: 0 0 26px 26px; background: #000; padding: 10px 18px 14px; color: #fff; font-size: 12px; box-shadow: 0 18px 50px -14px var(--mg, #7b6cff); }
 .mock-head { display: flex; justify-content: space-between; align-items: center; color: #ffffff99; font-size: 11px; margin-bottom: 10px; }
 .mock-head .dots { display: flex; gap: 7px; }
@@ -1286,7 +1287,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
     </div>
     <div class="gallery-grid" id="galleryGrid">
       <figure class="shot reveal">
-        <div class="stage"><div class="mock" style="--mg:#2dd4bf">
+        <div class="shot-stage"><div class="mock" style="--mg:#2dd4bf">
           <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i style="--c:#34d399"></i><i class="on" style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
           <div class="mock-cols">
             <div><h5>OUTPUT</h5>
@@ -1302,7 +1303,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <figcaption><b>Sound</b>Switch speakers and headphones, and set each app's volume.</figcaption>
       </figure>
       <figure class="shot reveal">
-        <div class="stage"><div class="mock" style="--mg:#60a5fa">
+        <div class="shot-stage"><div class="mock" style="--mg:#60a5fa">
           <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i style="--c:#34d399"></i><i style="--c:#2dd4bf"></i><i class="on" style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
           <div class="mock-tiles">
             <div class="on" style="--c:#8b5cf6">Dark mode</div><div class="on" style="--c:#3b82f6">Bluetooth</div><div class="on" style="--c:#0ea5e9">Wi-Fi</div><div style="--c:#f59e0b">Keep awake</div>
@@ -1312,7 +1313,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <figcaption><b>Controls</b>The switches you reach for most, one tap each.</figcaption>
       </figure>
       <figure class="shot reveal">
-        <div class="stage"><div class="mock" style="--mg:#a3e635">
+        <div class="shot-stage"><div class="mock" style="--mg:#a3e635">
           <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#34d399"></i><i style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i><i class="on" style="--c:#a3e635"></i></span><b>9:41 PM</b></div>
           <div class="mock-cols" style="grid-template-columns:1fr 130px">
             <div><div class="calc">5 km in miles</div><div class="big">= 3.1069 mi</div><div class="sub">Enter copies the answer.</div></div>
@@ -1324,7 +1325,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 40px; }
         <figcaption><b>Tools</b>Calculator and unit converter, a screen color picker, and a countdown.</figcaption>
       </figure>
       <figure class="shot reveal">
-        <div class="stage"><div class="mock" style="--mg:#ff6b57">
+        <div class="shot-stage"><div class="mock" style="--mg:#ff6b57">
           <div class="mock-head"><span>Tue, Nov 10</span><span class="dots"><i style="--c:#ff5e7e"></i><i style="--c:#c084fc"></i><i class="on" style="--c:#ff9f0a"></i><i style="--c:#2dd4bf"></i><i style="--c:#60a5fa"></i></span><b>9:41 PM</b></div>
           <span class="chip">Timer</span><span class="chip">Stopwatch</span><span class="chip on">Focus</span>
           <div class="big" style="font-size:34px">18:24</div>
@@ -1427,7 +1428,7 @@ const CONFIG = {
   repoUrl: "https://github.com/RiRoboYT/Crest",
   // The project zip is hosted with the site (docs/downloads/Crest.zip), so the button downloads it directly.
   downloadUrl: "downloads/Crest.zip",
-  zipSize: "157 KB",
+  zipSize: "181 KB",
 };
 
 (() => {
