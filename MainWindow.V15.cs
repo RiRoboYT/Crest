@@ -120,6 +120,9 @@ namespace Crest
                 page.Tab.ToolTipOpening += (_, _) => page.Tab.ToolTip = TabInfo(page.Name);
             }
 
+            // Everything inside the notch (tint, blurred cover, weather sky…) follows its rounded corners.
+            Notch.SizeChanged += (_, _) => UpdateContentClip();
+
             BuildPowerRow();
             BuildSymbols();
             RenderUsbButton();
@@ -559,6 +562,42 @@ namespace Crest
         // =====================================================================
         //  Music: app switcher, mini player (hold Alt)
         // =====================================================================
+
+        /// <summary>
+        /// Clips the notch's content to the notch's own rounded outline. A Border only rounds its own
+        /// background, so without this the page tint, blurred cover and weather sky would show square
+        /// corners outside the curve.
+        /// </summary>
+        private void UpdateContentClip()
+        {
+            if (ContentRoot == null || Notch == null) return;
+            double w = Notch.ActualWidth, h = Notch.ActualHeight;
+            if (w <= 0 || h <= 0) return;
+            ContentRoot.Clip = RoundedRect(w, h, Notch.CornerRadius);
+        }
+
+        private static Geometry RoundedRect(double w, double h, CornerRadius r)
+        {
+            double max = Math.Min(w, h) / 2;
+            double tl = Math.Clamp(r.TopLeft, 0, max), tr = Math.Clamp(r.TopRight, 0, max);
+            double br = Math.Clamp(r.BottomRight, 0, max), bl = Math.Clamp(r.BottomLeft, 0, max);
+
+            var g = new StreamGeometry();
+            using (var c = g.Open())
+            {
+                c.BeginFigure(new Point(tl, 0), isFilled: true, isClosed: true);
+                c.LineTo(new Point(w - tr, 0), true, false);
+                if (tr > 0) c.ArcTo(new Point(w, tr), new Size(tr, tr), 0, false, SweepDirection.Clockwise, true, false);
+                c.LineTo(new Point(w, h - br), true, false);
+                if (br > 0) c.ArcTo(new Point(w - br, h), new Size(br, br), 0, false, SweepDirection.Clockwise, true, false);
+                c.LineTo(new Point(bl, h), true, false);
+                if (bl > 0) c.ArcTo(new Point(0, h - bl), new Size(bl, bl), 0, false, SweepDirection.Clockwise, true, false);
+                c.LineTo(new Point(0, tl), true, false);
+                if (tl > 0) c.ArcTo(new Point(tl, 0), new Size(tl, tl), 0, false, SweepDirection.Clockwise, true, false);
+            }
+            g.Freeze();
+            return g;
+        }
 
         /// <summary>
         /// The date in the open notch's header, as long as fits beside the tabs:

@@ -754,6 +754,7 @@ namespace Crest
                 NotchShape.Bar => new CornerRadius(0, 0, Math.Min(r, 8), Math.Min(r, 8)),
                 _ => new CornerRadius(0, 0, r, r)
             };
+            UpdateContentClip();
         }
 
         /// <summary>Used by the settings window so you can see expanded-size changes live.</summary>
