@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows.Threading;
 
 namespace Crest.Services
@@ -8,7 +9,17 @@ namespace Crest.Services
         Timer,
         Stopwatch,
         /// <summary>Focus sessions: work, short break, work… (Pomodoro).</summary>
-        Focus
+        Focus,
+        /// <summary>Sleep timer: pauses the music when it runs out.</summary>
+        Sleep
+    }
+
+    /// <summary>A second (third…) countdown running alongside the main one.</summary>
+    public sealed class ExtraTimer
+    {
+        public string Name { get; init; } = "";
+        public DateTime EndsAt { get; init; }
+        public TimeSpan Left => EndsAt - DateTime.Now < TimeSpan.Zero ? TimeSpan.Zero : EndsAt - DateTime.Now;
     }
 
     /// <summary>A countdown timer and a stopwatch shared by every notch window.</summary>
@@ -20,6 +31,42 @@ namespace Crest.Services
 
         public event EventHandler? Changed;
         public event EventHandler? Finished;
+        /// <summary>The sleep timer ran out (UI thread).</summary>
+        public event EventHandler? SleepFinished;
+        /// <summary>An extra timer ran out: its name.</summary>
+        public event Action<string>? ExtraFinished;
+
+        private readonly List<ExtraTimer> _extras = new();
+        private readonly List<TimeSpan> _laps = new();
+
+        public IReadOnlyList<ExtraTimer> Extras => _extras;
+        /// <summary>Stopwatch laps, newest first (lap time, not total).</summary>
+        public IReadOnlyList<TimeSpan> Laps => _laps;
+
+        /// <summary>Starts a countdown next to the running one (e.g. tea while the pasta timer runs).</summary>
+        public void AddExtra(TimeSpan duration)
+        {
+            if (_extras.Count >= 3) _extras.RemoveAt(0);
+            _extras.Add(new ExtraTimer { Name = $"{(int)duration.TotalMinutes} min", EndsAt = DateTime.Now + duration });
+            if (!_tick.IsEnabled) _tick.Start();
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void RemoveExtra(ExtraTimer timer)
+        {
+            if (_extras.Remove(timer)) Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>Stopwatch: remember the time since the previous lap.</summary>
+        public void Lap()
+        {
+            if (Mode != TimerMode.Stopwatch || !Running) return;
+            TimeSpan total = Value, before = TimeSpan.Zero;
+            foreach (var l in _laps) before += l;
+            _laps.Insert(0, total - before);
+            if (_laps.Count > 20) _laps.RemoveAt(_laps.Count - 1);
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
         /// <summary>Focus mode switched between work and break (UI thread).</summary>
         public event EventHandler? FocusPhaseChanged;
 
@@ -37,7 +84,7 @@ namespace Crest.Services
         public TimeSpan Duration { get; private set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>True while there's something to show (running, or paused part-way).</summary>
-        public bool IsActive => Running || (Mode == TimerMode.Stopwatch ? _accumulated > TimeSpan.Zero : _accumulated > TimeSpan.Zero && _accumulated < Duration);
+        public bool IsActive => Running || _extras.Count > 0 || (Mode == TimerMode.Stopwatch ? _accumulated > TimeSpan.Zero : _accumulated > TimeSpan.Zero && _accumulated < Duration);
 
         public TimerService()
         {
@@ -68,6 +115,10 @@ namespace Crest.Services
                 IsBreak = false;
                 Round = 1;
                 Duration = FocusWork;
+            }
+            else if (mode == TimerMode.Sleep)
+            {
+                Duration = TimeSpan.FromMinutes(30);
             }
             else if (mode == TimerMode.Timer && Duration == FocusWork)
             {
@@ -101,7 +152,7 @@ namespace Crest.Services
         /// <summary>Starts a countdown of <paramref name="duration"/> right away.</summary>
         public void StartTimer(TimeSpan duration)
         {
-            Mode = TimerMode.Timer;
+            if (Mode != TimerMode.Sleep) Mode = TimerMode.Timer;
             Duration = duration;
             _accumulated = duration;
             Start();
@@ -144,26 +195,41 @@ namespace Crest.Services
             if (!Running) return;
             _accumulated = Value;
             Running = false;
-            _tick.Stop();
+            if (_extras.Count == 0) _tick.Stop();
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void Reset()
         {
             Running = false;
-            _tick.Stop();
+            if (_extras.Count == 0) _tick.Stop();
             if (Mode == TimerMode.Focus)
             {
                 IsBreak = false;
                 Round = 1;
                 Duration = FocusWork;
             }
+            _laps.Clear();
             _accumulated = Mode == TimerMode.Stopwatch ? TimeSpan.Zero : Duration;
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnTick()
         {
+            for (int i = _extras.Count - 1; i >= 0; i--)
+            {
+                if (_extras[i].Left > TimeSpan.Zero) continue;
+                string name = _extras[i].Name;
+                _extras.RemoveAt(i);
+                ExtraFinished?.Invoke(name);
+            }
+            if (!Running)
+            {
+                if (_extras.Count == 0) _tick.Stop();
+                Changed?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
             if (Mode == TimerMode.Focus && Value <= TimeSpan.Zero)
             {
                 // Work → break → work… and keep running.
@@ -176,10 +242,19 @@ namespace Crest.Services
                 FocusPhaseChanged?.Invoke(this, EventArgs.Empty);
                 return;
             }
+            if (Mode == TimerMode.Sleep && Value <= TimeSpan.Zero)
+            {
+                Running = false;
+                if (_extras.Count == 0) _tick.Stop();
+                _accumulated = Duration;
+                Changed?.Invoke(this, EventArgs.Empty);
+                SleepFinished?.Invoke(this, EventArgs.Empty);
+                return;
+            }
             if (Mode == TimerMode.Timer && Value <= TimeSpan.Zero)
             {
                 Running = false;
-                _tick.Stop();
+                if (_extras.Count == 0) _tick.Stop();
                 _accumulated = TimeSpan.Zero;
                 Changed?.Invoke(this, EventArgs.Empty);
                 Finished?.Invoke(this, EventArgs.Empty);

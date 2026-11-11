@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Crest.Helpers
 {
@@ -14,7 +15,7 @@ namespace Crest.Helpers
         public static string? Evaluate(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return null;
-            string text = input.Trim().ToLowerInvariant().Replace(",", ".").Replace("×", "*").Replace("÷", "/");
+            string text = input.Trim().ToLowerInvariant().Replace(",", "").Replace("×", "*").Replace("÷", "/");
             try
             {
                 var conversion = TryConvert(text);
@@ -88,6 +89,10 @@ namespace Crest.Helpers
             string left = text[..split].Trim();
             string to = text[(split + len)..].Trim().TrimEnd('.');
 
+            // Money: "50 usd in inr", "$20 to euros", "1000 rupees in dollars"
+            string? money = TryCurrency(left, to);
+            if (money != null) return money;
+
             // number (may be an expression) followed by a unit
             int unitStart = left.Length;
             while (unitStart > 0 && (char.IsLetter(left[unitStart - 1]) || left[unitStart - 1] == '/' || left[unitStart - 1] == '°')) unitStart--;
@@ -108,6 +113,55 @@ namespace Crest.Helpers
 
             if (!Units.TryGetValue(from, out var a) || !Units.TryGetValue(to, out var b) || a.Group != b.Group) return null;
             return Format(Math.Round(value * a.Factor / b.Factor, 4)) + " " + b.Label;
+        }
+
+        private static readonly Dictionary<string, string> CurrencyWords = new()
+        {
+            ["$"] = "USD", ["dollar"] = "USD", ["dollars"] = "USD", ["€"] = "EUR", ["euro"] = "EUR", ["euros"] = "EUR",
+            ["£"] = "GBP", ["₹"] = "INR", ["rs"] = "INR", ["rupee"] = "INR", ["rupees"] = "INR", ["¥"] = "JPY", ["yen"] = "JPY",
+            ["taka"] = "BDT", ["dirham"] = "AED", ["dirhams"] = "AED", ["riyal"] = "SAR",
+        };
+
+        private static string? CurrencyCode(string word)
+        {
+            word = word.Trim().ToLowerInvariant();
+            if (CurrencyWords.TryGetValue(word, out var code)) return code;
+            if (word.Length == 3 && word.All(char.IsLetter) && !Units.ContainsKey(word)) return word.ToUpperInvariant();
+            return null;
+        }
+
+        private static string? TryCurrency(string left, string to)
+        {
+            string? toCode = CurrencyCode(to);
+            if (toCode == null) return null;
+
+            string? fromCode = null;
+            string number = left;
+            if (left.Length > 1 && CurrencyWords.TryGetValue(left[..1], out var prefixed))
+            {
+                fromCode = prefixed;
+                number = left[1..];
+            }
+            else
+            {
+                int sp = left.LastIndexOf(' ');
+                int i = left.Length;
+                while (i > 0 && (char.IsLetter(left[i - 1]) || "$€£₹¥".Contains(left[i - 1]))) i--;
+                if (i < left.Length)
+                {
+                    fromCode = CurrencyCode(left[i..]);
+                    number = left[..i];
+                }
+                _ = sp;
+            }
+            if (fromCode == null) return null;
+
+            double amount = new Parser(number.Trim()).Parse();
+            double? a = Crest.Services.CurrencyService.Rate(fromCode), b = Crest.Services.CurrencyService.Rate(toCode);
+            if (a == null || b == null)
+                return Crest.Services.CurrencyService.Loaded ? null : "getting today's rates…";
+            double result = amount / a.Value * b.Value;
+            return Math.Round(result, 2).ToString("#,0.##", CultureInfo.InvariantCulture) + " " + toCode;
         }
 
         private static string? TempUnit(string u) => u switch

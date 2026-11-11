@@ -194,6 +194,10 @@ namespace Crest
             string kind = _settings.IdleBuddy;
             bool show = kind != "Off" && !_showPlaying && CollapsedNet.Visibility != Visibility.Visible;
 
+            // Music just started: let the buddy wake up and hop before it makes room for the bars.
+            if (!show && _showPlaying && TryWakeBuddy()) return;
+            if (_buddyWaking) return;
+
             if (show && kind != _buddyKind) BuildIdleBuddy(kind);
             if (!show && _buddyKind.Length > 0)
             {
@@ -212,6 +216,7 @@ namespace Crest
         {
             IdleBuddy.Children.Clear();
             _buddyKind = kind;
+            if (BuildFancyBuddy(kind)) return;
 
             if (kind == "Pulse")
             {
@@ -516,36 +521,20 @@ namespace Crest
                    || DateTime.TryParse(text, CultureInfo.CurrentCulture, DateTimeStyles.None, out day);
         }
 
-        private void CalcBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            CalcPlaceholder.Visibility = CalcBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-            string? result = Calculator.Evaluate(CalcBox.Text);
-            CalcResult.Text = result != null ? "= " + result : "=";
-            CalcResult.Opacity = result != null ? 1 : 0.4;
-            CalcHint.Text = "Type a sum or a conversion. Enter copies the answer.";
-        }
+        private void CalcBox_TextChanged(object sender, TextChangedEventArgs e) => ToolsInputChanged();
 
         private void CalcBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
-                string? result = Calculator.Evaluate(CalcBox.Text);
-                if (result == null) return;
-                try
-                {
-                    Clipboard.SetText(result);
-                    CalcHint.Text = "Copied ✓";
-                }
-                catch (Exception ex)
-                {
-                    App.LogError("Copying the result failed", ex);
-                }
+                ToolsInputEnter();
             }
             else if (e.Key == Key.Escape)
             {
                 e.Handled = true;
-                EndTyping(collapseIfOutside: true);
+                if (SymbolsPanel.Visibility == Visibility.Visible) SymbolsPanel.Visibility = Visibility.Collapsed;
+                else EndTyping(collapseIfOutside: true);
             }
         }
 

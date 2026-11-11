@@ -32,6 +32,13 @@ namespace Crest.Services
         public TodoService Todo { get; }
         public FocusStatsService FocusStats { get; }
         public DownloadWatcherService Downloads { get; }
+        public HistoryService History { get; }
+        public ReminderService Reminders { get; }
+        public WellbeingService Wellbeing { get; }
+        public SystemWatchService SystemWatch { get; }
+        public TopAppsService TopApps { get; }
+        public SnippetService Snippets { get; }
+        public AppVolumeMemory AppVolumes { get; }
 
         public CrestServices(Dispatcher dispatcher)
         {
@@ -61,6 +68,13 @@ namespace Crest.Services
             Todo = new TodoService();
             FocusStats = new FocusStatsService();
             Downloads = new DownloadWatcherService(dispatcher);
+            History = new HistoryService();
+            Reminders = new ReminderService();
+            Wellbeing = new WellbeingService();
+            SystemWatch = new SystemWatchService(dispatcher);
+            TopApps = new TopAppsService();
+            Snippets = new SnippetService(KeyboardHook);
+            AppVolumes = new AppVolumeMemory();
         }
 
         /// <summary>Starts everything that runs on its own.</summary>
@@ -102,6 +116,8 @@ namespace Crest.Services
             Safe(Network.Dispose);
             Safe(Toggles.Dispose);
             Safe(Downloads.Dispose);
+            Safe(() => Snippets.Configure(false, ""));
+            Safe(AppVolumes.Dispose);
         }
     }
 }

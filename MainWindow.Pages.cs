@@ -55,6 +55,7 @@ namespace Crest
             _pages.Add(new PageInfo("Sound", TabSound, PageSound, () => _settings.PageSound));
             _pages.Add(new PageInfo("Controls", TabControls, PageControls, () => _settings.PageControls));
             _pages.Add(new PageInfo("Tools", TabTools, PageTools, () => _settings.PageTools));
+            _pages.Add(new PageInfo("Recent", TabRecent, PageRecent, () => _settings.PageRecent));
 
             _lyricsTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(200) };
             _lyricsTimer.Tick += (_, _) => UpdateLyricLine(force: false);
@@ -165,6 +166,8 @@ namespace Crest
         private void SelectPage(string name, int direction)
         {
             if (name == _currentPage && direction != 0) return;
+            if (_state != NotchState.Expanded) _pagePickedBeforeOpen = true;   // e.g. clicking a pop-up opens its page
+            if (_currentPage == "Weather" && name != "Weather") WeatherFx.Children.Clear();
             _currentPage = name;
 
             foreach (var p in _pages)
@@ -186,10 +189,13 @@ namespace Crest
             UpdateLyricsTimer();
             UpdateProgress();
             UpdateSoundRefresh();
+            UpdatePageTint(animate: true);
+            SetTopAppsInUse(_showTopApps && name == "System" && _state == NotchState.Expanded);
         }
 
         private void OnExpandedOpened()
         {
+            ApplyStartPage();
             if (!_pages.First(p => p.Name == _currentPage).Enabled()) SelectPage("Music", 0);
             SetStatsInUse(_currentPage == "System");
             if (_currentPage == "Shelf") _svc.Shelf.Prune();
@@ -225,6 +231,7 @@ namespace Crest
                 case "Notes": RenderClipboard(); break;
                 case "Sound": RenderSound(); break;
                 case "Tools": RenderTools(); break;
+                case "Recent": RenderRecent(); break;
                 case "Controls":
                     RenderControls();
                     _ = _svc.Toggles.RefreshRadiosAsync();
@@ -510,6 +517,7 @@ namespace Crest
                 col.Children.Add(temp);
                 WeatherHours.Children.Add(col);
             }
+            DecorateWeather();
         }
 
         // =====================================================================
@@ -544,6 +552,8 @@ namespace Crest
             string devices = DeviceBatteriesText();
             DevicesFooter.Text = devices;
             DevicesFooter.Visibility = devices.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            DecorateSystem();
+            if (_showTopApps) RenderTopApps();
         }
 
         // =====================================================================
@@ -571,6 +581,7 @@ namespace Crest
                 TimerSub.Foreground = new SolidColorBrush(t.IsBreak ? Green : Tomato);
             }
 
+            RenderTimerExtras();
             bool stats = focus && _settings.FocusStats;
             FocusStatsText.Visibility = stats ? Visibility.Visible : Visibility.Collapsed;
             if (stats)
@@ -588,8 +599,11 @@ namespace Crest
 
         private void TimerPreset_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button { Tag: string tag } && int.TryParse(tag, out int minutes))
-                _svc.Timer.StartTimer(TimeSpan.FromMinutes(minutes));
+            if (sender is not Button { Tag: string tag } || !int.TryParse(tag, out int minutes)) return;
+            var t = _svc.Timer;
+            // A timer is already running: start another one next to it instead of replacing it.
+            if (t.Mode == TimerMode.Timer && t.Running) t.AddExtra(TimeSpan.FromMinutes(minutes));
+            else t.StartTimer(TimeSpan.FromMinutes(minutes));
         }
 
         private void TimerPlus_Click(object sender, RoutedEventArgs e) => _svc.Timer.AddMinute();
@@ -629,8 +643,20 @@ namespace Crest
             var grid = new Grid();
             var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
-            var icon = FileIcon(path);
-            if (icon != null)
+            var thumb = ShelfThumbnail(path);
+            var icon = thumb == null ? FileIcon(path) : null;
+            if (thumb != null)
+                stack.Children.Add(new Border
+                {
+                    Width = 58,
+                    Height = 38,
+                    CornerRadius = new CornerRadius(7),
+                    Margin = new Thickness(0, 2, 0, 5),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)),
+                    BorderThickness = new Thickness(1),
+                    Background = new ImageBrush(thumb) { Stretch = Stretch.UniformToFill }
+                });
+            else if (icon != null)
                 stack.Children.Add(new Image { Source = icon, Width = 32, Height = 32, Margin = new Thickness(0, 0, 0, 5) });
             else
             {
@@ -642,7 +668,7 @@ namespace Crest
                 stack.Children.Add(glyph);
             }
 
-            var name = MakeText(Path.GetFileName(path.TrimEnd('\\')), subtle: true);
+            var name = MakeText(ShelfName(path), subtle: true);
             name.TextAlignment = TextAlignment.Center;
             name.HorizontalAlignment = HorizontalAlignment.Center;
             name.MaxWidth = 64;
@@ -712,6 +738,56 @@ namespace Crest
                 DragOutOfShelf(tile, path);
             };
             return tile;
+        }
+
+        private static readonly Dictionary<string, ImageSource?> ThumbCache = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>A small preview for pictures (screenshots…), null for other files.</summary>
+        private static ImageSource? ShelfThumbnail(string path)
+        {
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext is not (".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".webp")) return null;
+            if (ThumbCache.TryGetValue(path, out var cached)) return cached;
+            ImageSource? result = null;
+            try
+            {
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                bmp.DecodePixelWidth = 140;
+                bmp.UriSource = new Uri(path);
+                bmp.EndInit();
+                bmp.Freeze();
+                result = bmp;
+            }
+            catch
+            {
+                // not a readable picture – the file icon is used instead
+            }
+            if (ThumbCache.Count > 60) ThumbCache.Clear();
+            ThumbCache[path] = result;
+            return result;
+        }
+
+        /// <summary>"Screenshot 2026-11-11 154733.png" → "Screenshot · 3:47 PM"; other names unchanged.</summary>
+        private static string ShelfName(string path)
+        {
+            string file = Path.GetFileName(path.TrimEnd('\\'));
+            if (file.Length == 0) return path;   // a drive root
+            if (file.StartsWith("Screenshot", StringComparison.OrdinalIgnoreCase) && ShelfThumbnail(path) != null)
+            {
+                try
+                {
+                    var t = File.GetLastWriteTime(path);
+                    return "Screenshot · " + (t.Date == DateTime.Today ? t.ToString("t") : t.ToString("d MMM"));
+                }
+                catch
+                {
+                    return "Screenshot";
+                }
+            }
+            return file;
         }
 
         private void DragOutOfShelf(DependencyObject source, string path)
@@ -810,13 +886,14 @@ namespace Crest
             foreach (var item in clip.Items)
             {
                 if (rows.Count >= Math.Max(4, clip.Pinned.Count + 2)) break;
-                if (item.Text != null && clip.IsPinned(item.Text)) continue;
+                if (item.IsImage || item.Text == null) continue;   // images belong on the shelf, not here
+                if (clip.IsPinned(item.Text)) continue;
                 rows.Add((item, false));
             }
 
             if (rows.Count == 0)
             {
-                ClipboardList.Children.Add(MakeText(_settings.ClipboardImages ? "Copy text or an image and it shows up here." : "Copy some text and it shows up here.", subtle: true));
+                ClipboardList.Children.Add(MakeText("Copy some text and it shows up here.", subtle: true));
                 ((TextBlock)ClipboardList.Children[0]).TextWrapping = TextWrapping.Wrap;
                 return;
             }

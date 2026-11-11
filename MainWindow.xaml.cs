@@ -168,6 +168,7 @@ namespace Crest
             InitActivities();
             InitExtras();
             InitV14();
+            InitV15();
             InitInput();
 
             SourceInitialized += OnSourceInitialized;
@@ -269,14 +270,14 @@ namespace Crest
         {
             var s = _settings;
             double shoulder = ShoulderSize();
-            double topMargin = s.Shape == NotchShape.Pill ? s.TopMargin : 0;
+            double topMargin = s.Shape.Floats() ? s.TopMargin : 0;
 
             // Room for the widest state, the timer bubble on both sides (spacer), the glow and the
             // slight overshoot of the expand animation.
             double widest = Math.Max(Math.Max(s.CollapsedWidth, s.ExpandedWidth), ComputePeekWidth(s));
             // Extra room around the shape for the album glow (it spreads up to ~110 px).
             double widthDip = widest + shoulder * 2 + 2 * (BubbleMaxWidth + BubbleGap) + 2 * GlowRoom;
-            double heightDip = Math.Max(s.CollapsedHeight, s.ExpandedHeight) + topMargin + GlowRoom;
+            double heightDip = Math.Max(s.CollapsedHeight, s.ExpandedHeight + LargeExtra) + topMargin + GlowRoom;
             Width = widthDip;
             Height = heightDip;
 
@@ -397,16 +398,16 @@ namespace Crest
             bool notchShape = s.Shape == NotchShape.Notch;
             LeftShoulder.Visibility = RightShoulder.Visibility = notchShape && shoulder > 0 ? Visibility.Visible : Visibility.Collapsed;
             LeftShoulder.Width = LeftShoulder.Height = RightShoulder.Width = RightShoulder.Height = Math.Max(shoulder, 0.1);
-            ShapeRow.Margin = new Thickness(0, notchShape ? 0 : s.TopMargin, 0, 0);
+            ShapeRow.Margin = new Thickness(0, s.Shape.Floats() ? s.TopMargin : 0, 0, 0);
             Bubble.Height = s.CollapsedHeight;
             double br = Math.Min(s.CornerRadius, s.CollapsedHeight / 2);
-            Bubble.CornerRadius = notchShape ? new CornerRadius(0, 0, br, br) : new CornerRadius(s.CollapsedHeight / 2);
+            Bubble.CornerRadius = s.Shape.Floats() ? new CornerRadius(s.CollapsedHeight / 2) : new CornerRadius(0, 0, br, br);
 
             CollapsedHost.Height = s.CollapsedHeight;
             PeekHost.Width = ActivityHost.Width = PeekWidth;
             PeekHost.Height = ActivityHost.Height = PeekHeight;
             ExpandedHost.Width = s.ExpandedWidth;
-            ExpandedHost.Height = s.ExpandedHeight;
+            ExpandedHost.Height = s.ExpandedHeight + LargeExtra;
 
             // ---- display toggles ----
             DateText.Visibility = s.ShowDate && s.ExpandedWidth >= 380 ? Visibility.Visible : Visibility.Collapsed;
@@ -436,6 +437,7 @@ namespace Crest
             ApplyActivitySettings();
             ApplyExtrasSettings();
             ApplyV14Settings();
+            ApplyV15Settings();
             ApplyRules();
 
             UpdateWindowBounds();
@@ -453,6 +455,14 @@ namespace Crest
             Color background = ColorHelper.Parse(s.BackgroundColor, Colors.Black);
             Color spectrum = ColorHelper.Parse(s.SpectrumColor, Colors.White);
             Color accent = ColorHelper.Parse(s.AccentColor, Colors.White);
+
+            // Accent from the desktop wallpaper (album colors still win while they apply).
+            if (WallpaperAccentColor is Color wall)
+            {
+                Color fromWall = ColorHelper.AdjustForBackground(wall, background);
+                accent = fromWall;
+                spectrum = fromWall;
+            }
 
             if (Media.AlbumColor is Color album)
             {
@@ -474,7 +484,7 @@ namespace Crest
 
             FadeBrush(_spectrumBrush, spectrum, ref _spectrumTarget, animate);
             FadeBrush(_accentBrush, accent, ref _accentTarget, animate);
-            SetGlowPalette(Media.AlbumPalette, animate);
+            SetGlowPalette(Media.AlbumPalette.Count == 0 && WallpaperAccentColor is Color wallGlow ? new[] { wallGlow } : Media.AlbumPalette, animate);
         }
 
         private static void FadeBrush(SolidColorBrush brush, Color to, ref Color? currentTarget, bool animate)
@@ -631,7 +641,7 @@ namespace Crest
             switch (target)
             {
                 case NotchState.Expanded:
-                    w = s.ExpandedWidth; h = s.ExpandedHeight; r = s.ExpandedCornerRadius;
+                    w = s.ExpandedWidth; h = s.ExpandedHeight + LargeExtra; r = s.ExpandedCornerRadius;
                     break;
                 case NotchState.Peek:
                 case NotchState.Activity:
@@ -677,6 +687,7 @@ namespace Crest
                 HideHeaderToast(animate: false);
                 LeaveKeyboardMode();
             }
+            OnStateChangedV15(previous, target, animate);
         }
 
         private void ShowHost(FrameworkElement host, bool show, NotchState owner, int ms)
@@ -735,9 +746,14 @@ namespace Crest
         {
             if (Notch == null) return;
             double r = Math.Max(0, ShapeRadius);
-            Notch.CornerRadius = _settings?.Shape == NotchShape.Pill
-                ? new CornerRadius(r)
-                : new CornerRadius(0, 0, r, r);
+            Notch.CornerRadius = _settings?.Shape switch
+            {
+                NotchShape.Pill => new CornerRadius(r),
+                // Island: extra-round, up to half the height of the collapsed notch.
+                NotchShape.Island => new CornerRadius(Math.Min(r * 1.5, Math.Max(r, Notch.ActualHeight / 2))),
+                NotchShape.Bar => new CornerRadius(0, 0, Math.Min(r, 8), Math.Min(r, 8)),
+                _ => new CornerRadius(0, 0, r, r)
+            };
         }
 
         /// <summary>Used by the settings window so you can see expanded-size changes live.</summary>
@@ -779,6 +795,7 @@ namespace Crest
             if (ExpandedTime.Text != time) ExpandedTime.Text = time;
 
             UpdateNightDim(animate: true);
+            if (_state == NotchState.Expanded && _currentPage == "Weather" && now.Second == 0) RenderWorldClocks();
 
             string date = now.ToString("ddd, MMM d", CultureInfo.CurrentCulture);
             if (DateText.Text != date) DateText.Text = date;
@@ -834,6 +851,8 @@ namespace Crest
 
             OnMediaUpdatedForLyrics(hasMedia);
             OnMediaUpdatedExtras();
+            UpdateAppSwitch();
+            if (_miniMode) MiniPlayButton.Content = Media.IsPlaying ? "\uE769" : "\uE768";
             UpdateProgress();
         }
 
@@ -1014,6 +1033,7 @@ namespace Crest
             CloseActivities();
             CloseExtras();
             CloseV14();
+            CloseV15();
 
             foreach (var unsubscribe in _unsubscribe)
             {

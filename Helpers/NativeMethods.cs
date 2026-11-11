@@ -329,5 +329,101 @@ namespace Crest.Helpers
         [DllImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumSize, IntPtr maximumSize);
+    
+        // ------------------------------------------------------------------ v1.5 additions
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
+
+        public const uint SPI_GETDESKWALLPAPER = 0x0073;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SystemParametersInfo(uint action, uint param, System.Text.StringBuilder value, uint winIni);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool LockWorkStation();
+
+        [DllImport("powrprof.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
+
+        // SendInput (text snippets)
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct InputUnion
+        {
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public KEYBDINPUT ki;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct INPUT
+        {
+            public uint type;
+            public InputUnion U;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint SendInput(uint count, INPUT[] inputs, int size);
+
+        private const uint INPUT_KEYBOARD = 1;
+        private const uint KEYEVENTF_UNICODE_FLAG = 0x0004;
+        private const uint KEYEVENTF_KEYUP_FLAG = 0x0002;
+
+        /// <summary>Deletes <paramref name="backspaces"/> characters, then types <paramref name="text"/> into the focused app.</summary>
+        public static void TypeText(int backspaces, string text)
+        {
+            var inputs = new System.Collections.Generic.List<INPUT>();
+            void Key(ushort vk, ushort scan, uint flags)
+                => inputs.Add(new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT { wVk = vk, wScan = scan, dwFlags = flags } } });
+
+            for (int i = 0; i < backspaces; i++)
+            {
+                Key(0x08, 0, 0);
+                Key(0x08, 0, KEYEVENTF_KEYUP_FLAG);
+            }
+            foreach (char ch in text.Replace("\r\n", "\n"))
+            {
+                if (ch == '\n')
+                {
+                    Key(0x0D, 0, 0);
+                    Key(0x0D, 0, KEYEVENTF_KEYUP_FLAG);
+                    continue;
+                }
+                Key(0, ch, KEYEVENTF_UNICODE_FLAG);
+                Key(0, ch, KEYEVENTF_UNICODE_FLAG | KEYEVENTF_KEYUP_FLAG);
+            }
+            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+        }
     }
 }

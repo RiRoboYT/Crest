@@ -25,7 +25,7 @@
           CollapsedHost – privacy dots + time (or lyric line) + spectrum
           PeekHost      – small art + title (a new song started)
           ActivityHost  – charging, headphones, calendar, timer done, volume / brightness
-          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes, Sound, Controls, Tools
+          ExpandedHost  – tabbed pages: Music, Lyrics, Calendar, Weather, System, Timer, Shelf, Notes, Sound, Controls, Tools, Recent
         Next to the notch: Bubble – a running timer / stopwatch (split island).
     -->
     <Window.Resources>
@@ -127,7 +127,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Width" Value="22" />
+            <Setter Property="Width" Value="21" />
             <Setter Property="Height" Value="22" />
             <Setter Property="Opacity" Value="0.6" />
             <Setter Property="Focusable" Value="False" />
@@ -357,6 +357,16 @@
 
                     <Grid x:Name="ContentRoot" ClipToBounds="True">
 
+                        <!-- Soft tint in the current page's color (Appearance → Effects) -->
+                        <Border x:Name="PageTintLayer" Opacity="0" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop x:Name="PageTintTop" Color="#00000000" Offset="0" />
+                                    <GradientStop Color="#00000000" Offset="0.85" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
                         <!-- Blurred album cover behind the open player (Appearance → Effects) -->
                         <Border x:Name="CoverBackdrop" Margin="26" CornerRadius="24" Opacity="0" IsHitTestVisible="False">
                             <Border.Background>
@@ -442,6 +452,9 @@
                             </Border>
                         </Grid>
 
+                        <!-- Snow / confetti / hearts on special days (drawn in code) -->
+                        <Canvas x:Name="SeasonLayer" IsHitTestVisible="False" ClipToBounds="True" />
+
                         <!-- ======================= PEEK (song changed) ======================= -->
                         <Grid x:Name="PeekHost" HorizontalAlignment="Center" VerticalAlignment="Top"
                               Width="340" Height="58" Opacity="0" Visibility="Collapsed">
@@ -474,6 +487,12 @@
                                     <TextBlock x:Name="PeekArtist" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis" Text="" />
                                 </StackPanel>
 
+                                <StackPanel x:Name="MiniControls" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                            Margin="8,0,0,0" Visibility="Collapsed">
+                                    <Button Style="{StaticResource SmallMediaButton}" Content="&#xE892;" Click="PreviousButton_Click" />
+                                    <Button x:Name="MiniPlayButton" Style="{StaticResource MediaButton}" Content="&#xE768;" Click="PlayPauseButton_Click" />
+                                    <Button Style="{StaticResource SmallMediaButton}" Content="&#xE893;" Click="NextButton_Click" />
+                                </StackPanel>
                                 <StackPanel x:Name="PeekSpectrum" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
                                             Margin="12,0,0,0" IsHitTestVisible="False" />
                             </Grid>
@@ -546,6 +565,7 @@
                                         <Button x:Name="TabSound" Style="{StaticResource TabButton}" Tag="Sound" ToolTip="Sound: outputs &amp; app volume" Content="&#xE7F5;" Foreground="#2DD4BF" Click="Tab_Click" />
                                         <Button x:Name="TabControls" Style="{StaticResource TabButton}" Tag="Controls" ToolTip="Quick controls" Content="&#xE9E9;" Foreground="#60A5FA" Click="Tab_Click" />
                                         <Button x:Name="TabTools" Style="{StaticResource TabButton}" Tag="Tools" ToolTip="Tools: calculator, color picker, countdown" Content="&#xE8EF;" Foreground="#A3E635" Click="Tab_Click" />
+                                        <Button x:Name="TabRecent" Style="{StaticResource TabButton}" Tag="Recent" ToolTip="Recently played" Content="&#xE81C;" Foreground="#F59E0B" Click="Tab_Click" />
                                     </StackPanel>
 
                                     <StackPanel x:Name="HeaderRight" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -626,6 +646,8 @@
                                                            Foreground="{DynamicResource SubtleTextBrush}"
                                                            TextTrimming="CharacterEllipsis" Margin="0,1,0,0"
                                                            Text="Play something to see it here" />
+                                                <Button x:Name="AppSwitchButton" Style="{StaticResource TextButton}" HorizontalAlignment="Left" Margin="0,1,0,0"
+                                                        Visibility="Collapsed" Click="AppSwitch_Click" ToolTip="Another app is playing too – click to switch" />
                                             </StackPanel>
 
                                             <StackPanel x:Name="ExpandedSpectrum" Grid.Column="2" Orientation="Horizontal"
@@ -703,6 +725,8 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <DockPanel x:Name="LyricsFooter" Grid.Row="1" Margin="0,2,0,0">
+                                            <Button x:Name="KaraokeButton" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Karaoke"
+                                                    Margin="12,0,0,0" Click="Karaoke_Click" ToolTip="Big lyrics" />
                                             <StackPanel x:Name="LyricsSyncPanel" DockPanel.Dock="Right" Orientation="Horizontal">
                                                 <Button Style="{StaticResource TextButton}" Content="− 0.5 s" Tag="-500" Click="LyricsOffset_Click"
                                                         ToolTip="Lyrics are late: show them earlier" Margin="0,0,8,0" />
@@ -747,6 +771,13 @@
 
                                     <!-- ===== Weather ===== -->
                                     <Grid x:Name="PageWeather" Visibility="Collapsed">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <!-- Sky colored by the weather, with gentle rain / snow / sun rays -->
+                                        <Border x:Name="WeatherSky" Grid.RowSpan="2" CornerRadius="14" Margin="-8,-2,-8,0" Opacity="0" IsHitTestVisible="False" />
+                                        <Canvas x:Name="WeatherFx" Grid.RowSpan="2" Margin="-8,-2,-8,0" ClipToBounds="True" IsHitTestVisible="False" />
                                         <Grid x:Name="WeatherContent" Visibility="Collapsed">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
@@ -764,6 +795,8 @@
                                         </Grid>
                                         <TextBlock x:Name="WeatherStatus" Style="{StaticResource SubText}" TextAlignment="Center" TextWrapping="Wrap"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="WorldClocksText" Grid.Row="1" Style="{StaticResource SubText}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" Visibility="Collapsed" Margin="0,2,0,0" />
                                     </Grid>
 
                                     <!-- ===== System ===== -->
@@ -772,7 +805,8 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <UniformGrid Columns="2" Rows="2" VerticalAlignment="Center">
+                                        <StackPanel x:Name="TopAppsPanel" VerticalAlignment="Center" Visibility="Collapsed" />
+                                        <UniformGrid x:Name="SystemMeters" Columns="2" Rows="2" VerticalAlignment="Center">
                                             <StackPanel Margin="0,0,12,10">
                                                 <DockPanel>
                                                     <TextBlock x:Name="CpuText" DockPanel.Dock="Right" Style="{StaticResource NotchText}" FontSize="{DynamicResource FontSmall}" FontWeight="SemiBold" />
@@ -780,7 +814,7 @@
                                                 </DockPanel>
                                                 <Grid Margin="0,4,0,0">
                                                     <Border Style="{StaticResource MeterTrack}" />
-                                                    <Border Style="{StaticResource MeterFill}">
+                                                    <Border x:Name="CpuFill" Style="{StaticResource MeterFill}">
                                                         <Border.RenderTransform><ScaleTransform x:Name="CpuScale" ScaleX="0" /></Border.RenderTransform>
                                                     </Border>
                                                 </Grid>
@@ -792,7 +826,7 @@
                                                 </DockPanel>
                                                 <Grid Margin="0,4,0,0">
                                                     <Border Style="{StaticResource MeterTrack}" />
-                                                    <Border Style="{StaticResource MeterFill}">
+                                                    <Border x:Name="RamFill" Style="{StaticResource MeterFill}">
                                                         <Border.RenderTransform><ScaleTransform x:Name="RamScale" ScaleX="0" /></Border.RenderTransform>
                                                     </Border>
                                                 </Grid>
@@ -804,7 +838,7 @@
                                                 </DockPanel>
                                                 <Grid Margin="0,4,0,0">
                                                     <Border Style="{StaticResource MeterTrack}" />
-                                                    <Border Style="{StaticResource MeterFill}">
+                                                    <Border x:Name="GpuFill" Style="{StaticResource MeterFill}">
                                                         <Border.RenderTransform><ScaleTransform x:Name="GpuScale" ScaleX="0" /></Border.RenderTransform>
                                                     </Border>
                                                 </Grid>
@@ -816,7 +850,7 @@
                                                 </DockPanel>
                                                 <Grid Margin="0,4,0,0">
                                                     <Border Style="{StaticResource MeterTrack}" />
-                                                    <Border Style="{StaticResource MeterFill}">
+                                                    <Border x:Name="DiskFill" Style="{StaticResource MeterFill}">
                                                         <Border.RenderTransform><ScaleTransform x:Name="DiskScale" ScaleX="0" /></Border.RenderTransform>
                                                     </Border>
                                                 </Grid>
@@ -825,7 +859,11 @@
                                         <StackPanel Grid.Row="1">
                                             <TextBlock x:Name="DevicesFooter" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis"
                                                        Visibility="Collapsed" Margin="0,0,0,1" />
-                                            <TextBlock x:Name="SystemFooter" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis" />
+                                            <DockPanel>
+                                                <Button x:Name="TopAppsButton" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Top apps ›"
+                                                        Margin="8,0,0,0" Click="TopApps_Click" ToolTip="See which apps use the most CPU and memory" />
+                                                <TextBlock x:Name="SystemFooter" Style="{StaticResource SubText}" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
                                         </StackPanel>
                                     </Grid>
 
@@ -840,11 +878,15 @@
                                                 <Button x:Name="ModeTimerBtn" Style="{StaticResource ChipButton}" Content="Timer" Click="TimerMode_Click" Tag="Timer" />
                                                 <Button x:Name="ModeStopwatchBtn" Style="{StaticResource ChipButton}" Content="Stopwatch" Click="TimerMode_Click" Tag="Stopwatch" />
                                                 <Button x:Name="ModeFocusBtn" Style="{StaticResource ChipButton}" Content="Focus" Click="TimerMode_Click" Tag="Focus" />
+                                                <Button x:Name="ModeSleepBtn" Style="{StaticResource ChipButton}" Content="Sleep" Click="TimerMode_Click" Tag="Sleep"
+                                                        ToolTip="Sleep timer: pauses the music when it runs out" />
                                             </StackPanel>
                                             <TextBlock x:Name="TimerBig" Style="{StaticResource NotchText}" FontFamily="Segoe UI Variable Display, Segoe UI"
                                                        FontSize="34" FontWeight="SemiBold" Text="05:00" Margin="0,2,0,0" />
                                             <TextBlock x:Name="TimerSub" Style="{StaticResource SubText}" FontWeight="SemiBold" Visibility="Collapsed" Text="Focus · round 1" />
                                             <TextBlock x:Name="FocusStatsText" Style="{StaticResource SubText}" Visibility="Collapsed" Margin="0,1,0,0" />
+                                            <StackPanel x:Name="TimerExtras" Orientation="Horizontal" Margin="0,2,0,0" />
+                                            <TextBlock x:Name="AlarmText" Style="{StaticResource SubText}" Visibility="Collapsed" Margin="0,1,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <WrapPanel x:Name="TimerPresets" Width="150" HorizontalAlignment="Right">
@@ -853,7 +895,10 @@
                                                 <Button Style="{StaticResource ChipButton}" Content="10 min" Tag="10" Click="TimerPreset_Click" />
                                                 <Button Style="{StaticResource ChipButton}" Content="25 min" Tag="25" Click="TimerPreset_Click" />
                                             </WrapPanel>
+                                            <StackPanel x:Name="LapsPanel" HorizontalAlignment="Right" Width="150" Visibility="Collapsed" Margin="0,0,0,4" />
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button x:Name="LapButton" Style="{StaticResource MediaButton}" FontFamily="Segoe UI" FontSize="10.5" FontWeight="SemiBold"
+                                                        ToolTip="Lap" Content="Lap" Click="Lap_Click" Visibility="Collapsed" />
                                                 <Button x:Name="TimerPlusBtn" Style="{StaticResource MediaButton}" FontFamily="Segoe UI" FontSize="11" FontWeight="SemiBold"
                                                         ToolTip="Add a minute" Content="+1" Click="TimerPlus_Click" />
                                                 <Button x:Name="TimerResetBtn" Style="{StaticResource MediaButton}" FontSize="13" ToolTip="Reset"
@@ -882,6 +927,8 @@
                                                    Text="Drag files onto the notch to keep them handy, then drag them out wherever you need them." />
                                         <DockPanel Grid.Row="1" Margin="2,3,2,0">
                                             <Button x:Name="ShelfClearBtn" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Clear all" Click="ShelfClear_Click" />
+                                            <Button x:Name="UsbButton" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Margin="0,0,14,0"
+                                                    Visibility="Collapsed" Click="UsbEject_Click" />
                                             <TextBlock x:Name="ShelfCount" Style="{StaticResource SubText}" />
                                         </DockPanel>
                                     </Grid>
@@ -973,10 +1020,18 @@
                                             </Border>
                                             <TextBlock x:Name="CalcResult" Style="{StaticResource NotchText}" FontFamily="Segoe UI Variable Display, Segoe UI"
                                                        FontSize="26" FontWeight="SemiBold" Margin="2,6,0,0" TextTrimming="CharacterEllipsis" Text="=" />
-                                            <TextBlock x:Name="CalcHint" Style="{StaticResource SubText}" Margin="2,0,0,0" Text="Type a sum or a conversion. Enter copies the answer." />
+                                            <StackPanel x:Name="ToolsResults" Orientation="Horizontal" Margin="0,2,0,0" />
+                                            <TextBlock x:Name="CalcHint" Style="{StaticResource SubText}" Margin="2,0,0,0" TextTrimming="CharacterEllipsis"
+                                                       Text="Sums, 5 km in miles, 50 usd in inr, translate… to hindi, remind me in 20 min to…" />
                                         </StackPanel>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <Border x:Name="QrHost" Grid.Column="1" Background="White" CornerRadius="10" Padding="5" Width="96" Height="96"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" ToolTip="Scan with your phone's camera">
+                                            <Image x:Name="QrImage" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        </Border>
+                                        <StackPanel x:Name="ToolsSide" Grid.Column="1" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal">
+                                                <Button x:Name="SymbolsButton" Style="{StaticResource ChipButton}" Content="Ω" Click="Symbols_Click"
+                                                        ToolTip="Symbols and emoji – click one to copy it" />
                                                 <Button x:Name="PickColorButton" Style="{StaticResource ChipButton}" Content="Pick a color" Click="PickColor_Click"
                                                         ToolTip="Click, then click anywhere on screen. The color code is copied." />
                                             </StackPanel>
@@ -984,11 +1039,34 @@
                                             <TextBlock x:Name="CountdownBig" Style="{StaticResource NotchText}" FontWeight="SemiBold" FontSize="{DynamicResource FontLarge}"
                                                        TextTrimming="CharacterEllipsis" />
                                             <TextBlock x:Name="CountdownSub" Style="{StaticResource SubText}" TextWrapping="Wrap" />
+                                            <DockPanel x:Name="WaterRow" Margin="0,5,0,0">
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource ChipButton}" Content="+ glass" Margin="0" Click="Water_Click"
+                                                        ToolTip="Drank a glass of water (right-click to undo)" MouseRightButtonUp="Water_RightClick" />
+                                                <TextBlock x:Name="WaterText" Style="{StaticResource SubText}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="#5AC8FA" />
+                                            </DockPanel>
                                         </StackPanel>
+                                        <!-- Symbols & emoji grid (Ω button) -->
+                                        <Border x:Name="SymbolsPanel" Grid.ColumnSpan="2" Background="{DynamicResource NotchBackground}" Visibility="Collapsed">
+                                            <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                                                <WrapPanel x:Name="SymbolsGrid" />
+                                            </ScrollViewer>
+                                        </Border>
                                     </Grid>
 
                                     <!-- ===== Controls: quick toggles ===== -->
-                                    <UniformGrid x:Name="PageControls" Visibility="Collapsed" Columns="4" Rows="2" />
+                                    <DockPanel x:Name="PageControls" Visibility="Collapsed">
+                                        <StackPanel x:Name="PowerRow" DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,1,2,0" />
+                                        <UniformGrid x:Name="ControlTiles" Columns="4" Rows="2" />
+                                    </DockPanel>
+
+                                    <!-- ===== Recent: listening history + this week's top ===== -->
+                                    <DockPanel x:Name="PageRecent" Visibility="Collapsed">
+                                        <TextBlock x:Name="RecentTop" DockPanel.Dock="Top" Style="{StaticResource SubText}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" Margin="2,0,0,4" Foreground="#F59E0B" />
+                                        <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                            <StackPanel x:Name="RecentList" />
+                                        </ScrollViewer>
+                                    </DockPanel>
                                 </Grid>
                             </Grid>
                         </Grid>

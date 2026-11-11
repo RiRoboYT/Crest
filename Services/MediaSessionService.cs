@@ -206,10 +206,57 @@ namespace Crest.Services
             Attach(next);
         }
 
+        // ---------------------------------------------------------------- app switcher
+        private string? _pinnedApp;
+
+        private static string AppOf(GlobalSystemMediaTransportControlsSession s)
+        {
+            try { return s.SourceAppUserModelId ?? ""; } catch { return ""; }
+        }
+
+        /// <summary>The apps that have a media session right now (Spotify, a browser…).</summary>
+        public IReadOnlyList<string> SessionApps
+        {
+            get
+            {
+                var list = new List<string>();
+                foreach (var s in _watched)
+                {
+                    string app = AppOf(s);
+                    if (app.Length > 0 && !list.Contains(app)) list.Add(app);
+                }
+                return list;
+            }
+        }
+
+        /// <summary>Show the next app's media instead (stays until another app starts playing).</summary>
+        public void SwitchToNextApp()
+        {
+            var apps = SessionApps;
+            if (apps.Count < 2) return;
+            int i = apps.IndexOf(SourceApp);
+            _pinnedApp = apps[(i + 1) % apps.Count];
+            Reevaluate();
+        }
+
         private GlobalSystemMediaTransportControlsSession? ChooseSession()
         {
             GlobalSystemMediaTransportControlsSession? current = null;
             try { current = _manager?.GetCurrentSession(); } catch { /* ignore */ }
+
+            if (_pinnedApp != null)
+            {
+                GlobalSystemMediaTransportControlsSession? pinned = null;
+                bool otherPlaying = false;
+                foreach (var s in _watched)
+                {
+                    if (AppOf(s) == _pinnedApp) pinned ??= s;
+                    else if (IsSessionPlaying(s)) otherPlaying = true;
+                }
+                // Keep your choice unless it's gone, or it's quiet while another app plays.
+                if (pinned != null && (IsSessionPlaying(pinned) || !otherPlaying)) return pinned;
+                _pinnedApp = null;
+            }
 
             if (!_preferPlaying) return current;
 

@@ -12,7 +12,17 @@ namespace Crest.Models
         /// <summary>Flat top flush with the screen edge, rounded bottom corners, concave "shoulders".</summary>
         Notch,
         /// <summary>Fully rounded floating pill.</summary>
-        Pill
+        Pill,
+        /// <summary>A floating island with soft, extra-round corners.</summary>
+        Island,
+        /// <summary>Flush with the top edge, no shoulders, small corners – a wide bar.</summary>
+        Bar
+    }
+
+    public static class NotchShapes
+    {
+        /// <summary>Pill and Island float below the screen edge.</summary>
+        public static bool Floats(this NotchShape s) => s is NotchShape.Pill or NotchShape.Island;
     }
 
     /// <summary>What a per-app rule does while that app is in front.</summary>
@@ -183,6 +193,35 @@ namespace Crest.Models
         private bool _trimMemory = true;
         private bool _keyboardControl = true;
 
+        // ---------- v1.5 ----------
+        private string _tabOrder = "";
+        private string _hiddenTabs = "";
+        private string _startPage = "Last";
+        private bool _largePlayer = false;
+        private bool _simpleSettings = false;
+        private bool _alarmEnabled = false;
+        private string _alarmTime = "07:30";
+        private string _worldClocks = "";
+        private bool _uiSounds = false;
+        private bool _seasonalTouches = true;
+        private bool _altMiniPlayer = false;
+        private bool _pageRecent = true;
+        private bool _keepHistory = true;
+        private bool _karaokeLyrics = false;
+        private bool _rememberAppVolumes = true;
+        private bool _eyeBreaks = false;
+        private bool _standUpReminder = true;
+        private bool _waterReminder = false;
+        private int _waterGoal = 8;
+        private bool _dailySummary = true;
+        private bool _snippetsEnabled = false;
+        private string _snippets = ";mail = you@example.com\n;addr = Your address, City";
+        private bool _storageAlerts = true;
+        private bool _internetAlerts = true;
+        private bool _usbActivity = true;
+        private bool _pageTint = true;
+        private bool _wallpaperAccent = false;
+
         // ---------- Behavior ----------
         private bool _startWithWindows = false;
         private bool _alwaysOnTop = true;
@@ -345,7 +384,7 @@ namespace Crest.Models
         public string IdleBuddy
         {
             get => _idleBuddy;
-            set => Set(ref _idleBuddy, value is "Cat" or "Pulse" ? value : "Off");
+            set => Set(ref _idleBuddy, value is "Cat" or "Pulse" or "Ghost" or "Orbit" or "Flame" or "Robot" ? value : "Off");
         }
         public bool NightDim { get => _nightDim; set => Set(ref _nightDim, value); }
         /// <summary>Hour of the day (0–23) the dimming starts / ends.</summary>
@@ -372,6 +411,48 @@ namespace Crest.Models
         public bool TrimMemory { get => _trimMemory; set => Set(ref _trimMemory, value); }
         /// <summary>After Win + Alt + N: arrows switch pages / change volume, Space plays or pauses, Esc closes.</summary>
         public bool KeyboardControl { get => _keyboardControl; set => Set(ref _keyboardControl, value); }
+
+        // ================================================================ v1.5
+        /// <summary>Page order in the open notch, comma separated (empty = default order).</summary>
+        public string TabOrder { get => _tabOrder; set => Set(ref _tabOrder, value ?? ""); }
+        /// <summary>Pages switched off from the order editor, comma separated.</summary>
+        public string HiddenTabs { get => _hiddenTabs; set => Set(ref _hiddenTabs, value ?? ""); }
+        /// <summary>"Last" (where you left off) or a page name.</summary>
+        public string StartPage { get => _startPage; set => Set(ref _startPage, string.IsNullOrWhiteSpace(value) ? "Last" : value); }
+        /// <summary>Taller open notch with a bigger cover and title.</summary>
+        public bool LargePlayer { get => _largePlayer; set => Set(ref _largePlayer, value); }
+        /// <summary>The settings window shows only the most used options.</summary>
+        public bool SimpleSettings { get => _simpleSettings; set => Set(ref _simpleSettings, value); }
+        public bool AlarmEnabled { get => _alarmEnabled; set => Set(ref _alarmEnabled, value); }
+        /// <summary>"HH:mm", 24-hour.</summary>
+        public string AlarmTime { get => _alarmTime; set => Set(ref _alarmTime, (value ?? "").Trim()); }
+        /// <summary>Cities, comma separated: "London, New York, Tokyo".</summary>
+        public string WorldClocks { get => _worldClocks; set => Set(ref _worldClocks, (value ?? "").Trim()); }
+        public bool UiSounds { get => _uiSounds; set => Set(ref _uiSounds, value); }
+        /// <summary>Snow in December, confetti on New Year's Day, hearts on Valentine's Day.</summary>
+        public bool SeasonalTouches { get => _seasonalTouches; set => Set(ref _seasonalTouches, value); }
+        /// <summary>Hold Alt on its own for half a second: a mini player pops out of the notch.</summary>
+        public bool AltMiniPlayer { get => _altMiniPlayer; set => Set(ref _altMiniPlayer, value); }
+        public bool PageRecent { get => _pageRecent; set => Set(ref _pageRecent, value); }
+        /// <summary>Remember the songs you play (on this PC only) for the Recent page.</summary>
+        public bool KeepHistory { get => _keepHistory; set => Set(ref _keepHistory, value); }
+        public bool KaraokeLyrics { get => _karaokeLyrics; set => Set(ref _karaokeLyrics, value); }
+        public bool RememberAppVolumes { get => _rememberAppVolumes; set => Set(ref _rememberAppVolumes, value); }
+        public bool EyeBreaks { get => _eyeBreaks; set => Set(ref _eyeBreaks, value); }
+        public bool StandUpReminder { get => _standUpReminder; set => Set(ref _standUpReminder, value); }
+        public bool WaterReminder { get => _waterReminder; set => Set(ref _waterReminder, value); }
+        public int WaterGoal { get => _waterGoal; set => Set(ref _waterGoal, Math.Clamp(value, 1, 20)); }
+        public bool DailySummary { get => _dailySummary; set => Set(ref _dailySummary, value); }
+        public bool SnippetsEnabled { get => _snippetsEnabled; set => Set(ref _snippetsEnabled, value); }
+        /// <summary>One per line: ";trigger = text". \n in the text makes a new line.</summary>
+        public string Snippets { get => _snippets; set => Set(ref _snippets, value ?? ""); }
+        public bool StorageAlerts { get => _storageAlerts; set => Set(ref _storageAlerts, value); }
+        public bool InternetAlerts { get => _internetAlerts; set => Set(ref _internetAlerts, value); }
+        public bool UsbActivity { get => _usbActivity; set => Set(ref _usbActivity, value); }
+        /// <summary>The open notch takes a soft tint of the current page's color.</summary>
+        public bool PageTint { get => _pageTint; set => Set(ref _pageTint, value); }
+        /// <summary>Accent color (progress, sliders, glow when idle) from your desktop wallpaper.</summary>
+        public bool WallpaperAccent { get => _wallpaperAccent; set => Set(ref _wallpaperAccent, value); }
 
         // ================================================================ Behavior
         public bool StartWithWindows { get => _startWithWindows; set => Set(ref _startWithWindows, value); }

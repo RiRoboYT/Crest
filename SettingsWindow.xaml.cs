@@ -88,11 +88,12 @@ namespace Crest
             DataContext = _settings;
 
             SettingsPathText.Text = manager.SettingsPath;
-            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.4.0");
+            VersionText.Text = "Version " + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.5.0");
 
             // Theme
             ApplyTheme();
             SyncSegments();
+            InitV15();
 
             _settings.PropertyChanged += OnSettingsChanged;
             _media.Updated += OnMediaUpdated;
@@ -151,6 +152,8 @@ namespace Crest
                 ThemeSystem.IsChecked = _settings.SettingsTheme == AppTheme.System;
                 ShapeNotch.IsChecked = _settings.Shape == NotchShape.Notch;
                 ShapePill.IsChecked = _settings.Shape == NotchShape.Pill;
+                ShapeIsland.IsChecked = _settings.Shape == NotchShape.Island;
+                ShapeBar.IsChecked = _settings.Shape == NotchShape.Bar;
             }
             finally
             {
@@ -210,6 +213,7 @@ namespace Crest
 
         private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
         {
+            OnSettingsChangedV15(e.PropertyName);
             switch (e.PropertyName)
             {
                 case nameof(AppSettings.SettingsTheme):
@@ -303,7 +307,7 @@ namespace Crest
             double shoulder = notchShape ? Math.Min(s.ShoulderSize, s.CollapsedHeight / 2) : 0;
             PvLeftShoulder.Visibility = PvRightShoulder.Visibility = shoulder > 0 ? Visibility.Visible : Visibility.Collapsed;
             PvLeftShoulder.Width = PvLeftShoulder.Height = PvRightShoulder.Width = PvRightShoulder.Height = Math.Max(shoulder, 0.1);
-            PvShapeRow.Margin = new Thickness(0, notchShape ? 0 : s.TopMargin, 0, 0);
+            PvShapeRow.Margin = new Thickness(0, s.Shape.Floats() ? s.TopMargin : 0, 0, 0);
 
             double collapsedWidth = _previewIdle && s.ShrinkWhenIdle
                 ? MainWindow.ComputeIdleWidth(s, VisualTreeHelper.GetDpi(this).PixelsPerDip)
@@ -329,7 +333,13 @@ namespace Crest
 
             AnimateTo(PvNotch, WidthProperty, w, animate);
             AnimateTo(PvNotch, HeightProperty, h, animate);
-            PvNotch.CornerRadius = notchShape ? new CornerRadius(0, 0, r, r) : new CornerRadius(r);
+            PvNotch.CornerRadius = s.Shape switch
+            {
+                NotchShape.Pill => new CornerRadius(r),
+                NotchShape.Island => new CornerRadius(r * 1.5),
+                NotchShape.Bar => new CornerRadius(0, 0, Math.Min(r, 8), Math.Min(r, 8)),
+                _ => new CornerRadius(0, 0, r, r)
+            };
 
             PvCollapsed.Visibility = _previewState == NotchState.Collapsed ? Visibility.Visible : Visibility.Collapsed;
             PvPeek.Visibility = _previewState == NotchState.Peek ? Visibility.Visible : Visibility.Collapsed;

@@ -14,7 +14,7 @@
     <AssemblyName>Crest</AssemblyName>
     <RootNamespace>Crest</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Product>Crest</Product>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
@@ -31,6 +31,8 @@
     <PackageReference Include="System.Management" Version="8.0.0" />
     <!-- GPU usage for the System page -->
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
+    <!-- QR codes on the Tools page (offline) -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <!-- `dotnet publish -c Release` produces a single self-contained Crest.exe -->

@@ -438,6 +438,7 @@ namespace Crest
             {
                 app.Volume = (float)(e.NewValue / 100.0);
                 slider.ToolTip = $"{app.Name}: {Math.Round(e.NewValue)}%";
+                if (_settings.RememberAppVolumes) _svc.AppVolumes.Remember(app.Key, (float)(e.NewValue / 100.0));
             };
             stack.Children.Add(slider);
             Grid.SetColumn(stack, 1);
@@ -512,7 +513,7 @@ namespace Crest
                 Margin = new Thickness(3)
             };
             tile.Click += (_, _) => click();
-            PageControls.Children.Add(tile);
+            ControlTiles.Children.Add(tile);
             _tiles[key] = (tile, icon, text, color);
         }
 

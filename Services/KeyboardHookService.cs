@@ -58,6 +58,8 @@ namespace Crest.Services
                 if (down || up)
                 {
                     int vk = Marshal.ReadInt32(lParam);   // KBDLLHOOKSTRUCT.vkCode is the first field
+                    int flags = Marshal.ReadInt32(lParam, 8);
+                    if ((flags & 0x10) != 0) return NativeMethods.CallNextHookEx(_hook, nCode, wParam, lParam);   // injected (typed by software)
                     // Hooks must return fast, so the work happens a moment later on the dispatcher.
                     _dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => Key?.Invoke(vk, down)));
                 }

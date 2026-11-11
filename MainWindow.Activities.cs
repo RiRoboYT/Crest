@@ -75,6 +75,7 @@ namespace Crest
                                   double? level, int milliseconds, string? opensPage = null, bool hud = false)
         {
             _activityOpensUrl = null;
+            _activityOpensPath = null;
 
             // The notch is open: there is no room for a pop-up, so show it as a line in the header.
             if (_state == NotchState.Expanded)
@@ -114,13 +115,21 @@ namespace Crest
                 ActivityLevel.Visibility = Visibility.Collapsed;
             }
 
+            if (!hud) UiSounds.Pop();
             ShowTemporarily(NotchState.Activity, milliseconds);
         }
 
         private void Activity_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             e.Handled = true;
-            if (_activityOpensUrl != null)
+            if (_activityOpensPath != null)
+            {
+                string path = _activityOpensPath;
+                _activityOpensPath = null;
+                OpenPath(path);
+                SetState(NotchState.Collapsed, animate: true);
+            }
+            else if (_activityOpensUrl != null)
             {
                 // Meeting reminder with a link → join it.
                 string url = _activityOpensUrl;
@@ -233,11 +242,16 @@ namespace Crest
 
             string text = _downloadInBubble ? DownloadWatcherService.FormatSize(_svc.Downloads.ReceivedBytes) : TimerService.Format(t.Value);
             BubbleText.Text = text;
-            BubbleIcon.Text = _downloadInBubble ? "\uE896" : "\uE916";
+            BubbleIcon.Text = _downloadInBubble ? "\uE896" : t.Mode == TimerMode.Sleep ? "\uE708" : "\uE916";
             BubbleIcon.Foreground = new SolidColorBrush(!t.Running ? Gray
                 : t.Mode == TimerMode.Focus ? (t.IsBreak ? Green : Tomato)
                 : Orange);
             Bubble.ToolTip = t.Mode == TimerMode.Focus ? (t.IsBreak ? "Break – open the timer" : $"Focus round {t.Round} – open the timer") : "Open the timer";
+            if (t.Mode == TimerMode.Sleep && t.Running)
+            {
+                BubbleIcon.Foreground = new SolidColorBrush(Violet);
+                Bubble.ToolTip = "Sleep timer – the music pauses at zero";
+            }
             if (_downloadInBubble)
             {
                 BubbleIcon.Foreground = new SolidColorBrush(Blue);

@@ -87,6 +87,36 @@ namespace Crest
             {
                 if (settings.DownloadsToShelf && settings.PageShelf) _services.Shelf.Add(new[] { path });
             };
+            // Listening history: a song counts once it has been playing for a few seconds.
+            _services.Media.TrackChanged += (_, _) =>
+            {
+                var check = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+                string title = _services.Media.Title;
+                check.Tick += (_, _) =>
+                {
+                    check.Stop();
+                    var m = _services.Media;
+                    if (settings.KeepHistory && m.IsPlaying && m.Title == title) _services.History.Add(m.Title, m.Artist, m.SourceApp);
+                };
+                check.Start();
+            };
+            _services.Timer.SleepFinished += (_, _) =>
+            {
+                if (_services.Media.IsPlaying) _ = _services.Media.TogglePlayPauseAsync();
+            };
+            _services.Timer.ExtraFinished += _ =>
+            {
+                if (settings.TimerSound) System.Media.SystemSounds.Exclamation.Play();
+            };
+            _services.Reminders.Due += _ => System.Media.SystemSounds.Asterisk.Play();
+            _services.Reminders.AlarmRang += async (_, _) =>
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    System.Media.SystemSounds.Exclamation.Play();
+                    await System.Threading.Tasks.Task.Delay(1400);
+                }
+            };
             _services.Hotkey.SetEnabled(settings.HotkeyEnabled);
             _services.Start();
             ApplySharedSettings(settings);
@@ -126,9 +156,23 @@ namespace Crest
             _services.Hotkey.SetMicEnabled(s.MicMuteHotkey);
             _services.LockKeys.SetEnabled(s.LockKeysActivity);
             _services.Shelf.WatchScreenshots(s.ScreenshotsToShelf);
-            _services.Clipboard.SetImagesEnabled(s.ClipboardImages);
+            _services.Clipboard.SetImagesEnabled(false);
             _services.Timer.ConfigureFocus(s.FocusWorkMinutes, s.FocusBreakMinutes);
             _services.Downloads.SetEnabled(s.DownloadActivity || s.DownloadsToShelf);
+
+            // Recent copies are text only; screenshots go to the shelf instead.
+            _services.Clipboard.SetImagesEnabled(false);
+            _services.Reminders.AlarmEnabled = s.AlarmEnabled;
+            if (TimeSpan.TryParse(s.AlarmTime, System.Globalization.CultureInfo.InvariantCulture, out var alarm)) _services.Reminders.AlarmTime = alarm;
+            var w = _services.Wellbeing;
+            w.EyeBreaks = s.EyeBreaks;
+            w.StandReminder = s.StandUpReminder;
+            w.WaterReminder = s.WaterReminder;
+            w.WaterGoal = s.WaterGoal;
+            w.DailySummary = s.DailySummary;
+            _services.Snippets.Configure(s.SnippetsEnabled, s.Snippets);
+            _services.AppVolumes.SetEnabled(s.RememberAppVolumes);
+            UiSounds.Enabled = s.UiSounds;
         }
 
         /// <summary>While every notch is closed and nothing plays, hand unused memory back to Windows.</summary>
@@ -195,6 +239,17 @@ namespace Crest
                 case nameof(AppSettings.FocusWorkMinutes):
                 case nameof(AppSettings.FocusBreakMinutes):
                 case nameof(AppSettings.DownloadActivity):
+                case nameof(AppSettings.AlarmEnabled):
+                case nameof(AppSettings.AlarmTime):
+                case nameof(AppSettings.EyeBreaks):
+                case nameof(AppSettings.StandUpReminder):
+                case nameof(AppSettings.WaterReminder):
+                case nameof(AppSettings.WaterGoal):
+                case nameof(AppSettings.DailySummary):
+                case nameof(AppSettings.SnippetsEnabled):
+                case nameof(AppSettings.Snippets):
+                case nameof(AppSettings.RememberAppVolumes):
+                case nameof(AppSettings.UiSounds):
                 case nameof(AppSettings.DownloadsToShelf):
                     ApplySharedSettings(s);
                     break;
