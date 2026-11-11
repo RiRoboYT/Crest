@@ -215,7 +215,7 @@ namespace Crest.Services
         }
 
         /// <summary>The apps that have a media session right now (Spotify, a browser…).</summary>
-        public IReadOnlyList<string> SessionApps
+        public List<string> SessionApps
         {
             get
             {
