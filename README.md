@@ -10,6 +10,24 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 * **Tray icon:** left-click opens Settings. Right-click gives Settings, Show notch, Start with Windows and Exit.
 * **Topmost:** the notch stays on top, including over fullscreen video and borderless-fullscreen games.
 
+## What's new in 1.5
+
+| Area | Change | Where in Settings |
+|---|---|---|
+| Pages | Reorder the pages and choose which one opens first; new **Recent** page (history + this week's top song). | Widgets → Page order, Pages |
+| Look | Large player, page-colored tint, colors from your wallpaper, Island and Bar shapes, four new idle buddies, seasonal touches, soft sounds, live info in tab tooltips. | Appearance, Size & Shape |
+| Weather | Colored icons and temperatures, an animated sky (rain, snow, sun, stars, clouds), world clocks. | Widgets → Weather |
+| Music | Switch between apps that are playing, mini player while you hold Alt, karaoke lyrics, per-app volume memory. | Media, Widgets → Pages |
+| Timer | Sleep timer, stopwatch laps, several timers at once, daily alarm, reminders ("remind me in 20 min to…"). | Widgets → Timer & focus |
+| Tools box | App launcher, currency ("50 usd in inr"), translate ("translate hello to hindi"), QR codes for links, symbols and emoji, water counter. | Widgets → Pages |
+| Wellbeing | Eye breaks, stand-up and water reminders, good-morning summary. | Activities → Wellbeing |
+| System | Top apps (with close), colored meters, Wi-Fi name and signal; USB, low-disk and internet pop-ups; eject USB from the Shelf. | Activities → Pop-ups |
+| Controls | Sleep, lock, restart and shut down buttons (click twice). | – |
+| Snippets | Type ";mail" anywhere and it becomes your email. Off by default. | Behavior → Text snippets |
+| Shelf | Real thumbnails for screenshots and pictures, tidy names. | – |
+| Clipboard | Recent copies are text only; screenshots belong on the shelf. | – |
+| Settings | Search box and a Simple view. | Sidebar |
+
 ## What's new in 1.4
 
 | Area | Change | Where in Settings |
@@ -46,7 +64,7 @@ A lightweight, Nusa-style notch for Windows 10/11, written in C# + WPF (.NET 8).
 | Controls page | Dark mode, Bluetooth, Wi-Fi, keep awake, pause pop-ups, mute mic, focus, night light. | Widgets → Pages |
 | Focus timer | Work / break cycles on the Timer page and in the side bubble; quiet while focusing. | Widgets → Timer & focus |
 | Screenshots | New screenshots land on the shelf automatically. | Widgets → Shelf & internet |
-| Clipboard | Copied images show up too (newest 3, memory only). | Widgets → Clipboard |
+| Clipboard | Copied images showed here in 1.3 (removed in 1.5 – text only). | – |
 | Internet speed | On the System page, and optionally in the closed notch. | Widgets → Shelf & internet |
 | Backup | Export / import all settings to a file. | About → Files |
 | Welcome tour | Three quick cards on first launch; can be replayed. | About → Tips |
@@ -110,6 +128,8 @@ Crest/
 ├── MainWindow.Glow.cs                   ← ambient album glow: colors, breathing, beat pulse, click-through
 ├── MainWindow.Extras.cs                 ← 1.3: cover in the closed notch, Sound & Controls pages, mic / lock keys / battery pop-ups, smooth transitions, hide while typing
 ├── MainWindow.V14.cs                    ← 1.4: header toast, backdrop, progress line, idle buddy, to-do, Tools page, downloads, keyboard control
+├── MainWindow.V15.cs                    ← 1.5: tabs, weather sky, Recent, timers, Tools box, wellbeing, system pop-ups, power, buddies
+├── SettingsWindow.V15.cs                ← settings search, Simple view, page order editor
 ├── TourWindow.cs                        ← first-run welcome tour
 ├── ColorPickerWindow.cs                 ← screen color picker (Tools page)
 ├── MainWindow.Input.cs                  ← gestures, hotkey, drag & drop, typing
@@ -139,6 +159,7 @@ Crest/
 │   ├── KeyboardHookService.cs           ← Caps / Num Lock + "hide while typing" (key down/up only)
 │   ├── NetworkSpeedService.cs, QuickTogglesService.cs
 │   ├── ProductivityServices.cs          ← to-do list, focus stats, download watcher
+│   ├── V15Services.cs                   ← history, reminders, currency, translate, launcher, wellbeing, USB / disk / internet, top apps, snippets, app volumes
 │   ├── CrestServices.cs                 ← creates all shared services
 │   ├── SettingsManager.cs               ← JSON load/save (debounced)
 │   ├── StartupManager.cs                ← "Start with Windows" (HKCU Run key)
@@ -200,4 +221,7 @@ Settings are saved to `settings.json` next to `Crest.exe`. If that folder isn't 
 * **Downloads:** recognised by the temporary files browsers write in your Downloads folder (Chrome, Edge, Brave, Opera, Firefox). The total size isn't known from outside, so the bubble shows how much has arrived, not a percentage.
 * **Presentations:** PowerPoint slideshows and Windows presentation mode are detected. Windows gives no signal for Zoom / Teams screen sharing; add those apps under Per-app rules.
 * **Device batteries:** only Bluetooth devices that report a level to Windows (the same ones that show a percentage in Windows' Bluetooth settings).
+* **Online helpers:** currency rates come from open.er-api.com (once every 12 hours) and translations from MyMemory (only the text you ask to translate). Everything else in the Tools box works offline, including QR codes.
+* **Text snippets:** watches only for your ";codes" while the option is on, then types the text for you. The rest of what you type isn't kept. Some games and admin windows ignore typed-in text.
+* **Shut down / restart:** need a second click within 3 seconds, so a stray click can't turn your PC off.
 * **Memory:** WPF's baseline working set is usually about 40–60 MB.
