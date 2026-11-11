@@ -144,6 +144,7 @@ namespace Crest
             }
             // Only the Music page → no tab strip at all.
             TabStrip.Visibility = visible > 1 ? Visibility.Visible : Visibility.Collapsed;
+            DateText.Text = HeaderDate(DateTime.Now);   // fewer / more tabs → more / less room for the date
         }
 
         private void Tab_Click(object sender, RoutedEventArgs e)

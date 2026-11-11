@@ -552,12 +552,38 @@ namespace Crest
             string text = string.Join("   ·   ", parts);
             WorldClocksText.Text = "🌐  " + text;
             WorldClocksText.Visibility = parts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            DateText.ToolTip = parts.Count > 0 ? text.Replace("   ·   ", "\n") : null;
+            DateText.ToolTip = DateTime.Now.ToString("dddd, d MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
+                               + (parts.Count > 0 ? "\n" + text.Replace("   ·   ", "\n") : "");
         }
 
         // =====================================================================
         //  Music: app switcher, mini player (hold Alt)
         // =====================================================================
+
+        /// <summary>
+        /// The date in the open notch's header, as long as fits beside the tabs:
+        /// "Wed, Nov 11" → "Wed 11" → "11". The full date is in its tooltip.
+        /// </summary>
+        private string HeaderDate(DateTime now)
+        {
+            int tabs = TabStrip.Visibility == Visibility.Visible
+                ? TabStrip.Children.OfType<Button>().Count(b => b.Visibility == Visibility.Visible)
+                : 0;
+            double tabWidth = TabStrip.Children.OfType<Button>().FirstOrDefault()?.Width is double w && w > 0 ? w : 21;
+            // Header columns are *, tabs, * – each side gets half of what the tabs leave.
+            double room = (_settings.ExpandedWidth - 40 - tabs * tabWidth) / 2 - 6;
+
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var typeface = new Typeface(DateText.FontFamily, DateText.FontStyle, DateText.FontWeight, DateText.FontStretch);
+            foreach (var format in new[] { "ddd, MMM d", "ddd d", "%d" })
+            {
+                string text = now.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
+                var measured = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                                                 typeface, DateText.FontSize, Brushes.White, pixelsPerDip);
+                if (measured.WidthIncludingTrailingWhitespace <= room) return text;
+            }
+            return "";
+        }
 
         private void UpdateAppSwitch()
         {

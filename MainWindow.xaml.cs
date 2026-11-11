@@ -797,7 +797,7 @@ namespace Crest
             UpdateNightDim(animate: true);
             if (_state == NotchState.Expanded && _currentPage == "Weather" && now.Second == 0) RenderWorldClocks();
 
-            string date = now.ToString("ddd, MMM d", CultureInfo.CurrentCulture);
+            string date = HeaderDate(now);
             if (DateText.Text != date) DateText.Text = date;
 
             UpdateProgress();
